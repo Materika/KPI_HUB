@@ -1,0 +1,34 @@
+{
+  "reparto": "acquisti",
+  "nome": "Acquisti",
+  "ultimoAggiornamento": "2026-01-15",
+  "kpi": [
+    {
+      "label": "Ordini fornitori",
+      "value": 142,
+      "target": 130,
+      "status": "ok"
+    },
+    {
+      "label": "Risparmio negoziato",
+      "value": 28500,
+      "unit": "€",
+      "target": 25000,
+      "status": "ok"
+    },
+    {
+      "label": "Lead time medio",
+      "value": 14,
+      "unit": "gg",
+      "target": 12,
+      "status": "warn"
+    },
+    {
+      "label": "Fornitori attivi",
+      "value": 47,
+      "target": 50,
+      "status": "ok"
+    }
+  ],
+  "alerts": []
+}

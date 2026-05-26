@@ -1,0 +1,36 @@
+{
+  "reparto": "logistica",
+  "nome": "Logistica",
+  "ultimoAggiornamento": "2026-01-15",
+  "kpi": [
+    {
+      "label": "Spedizioni in tempo",
+      "value": 94,
+      "unit": "%",
+      "target": 95,
+      "status": "warn"
+    },
+    {
+      "label": "Resi",
+      "value": 2.1,
+      "unit": "%",
+      "target": 3,
+      "status": "ok"
+    },
+    {
+      "label": "Costo medio spedizione",
+      "value": 8.4,
+      "unit": "€",
+      "target": 9,
+      "status": "ok"
+    },
+    {
+      "label": "Tempo medio consegna",
+      "value": 2.8,
+      "unit": "gg",
+      "target": 3,
+      "status": "ok"
+    }
+  ],
+  "alerts": []
+}

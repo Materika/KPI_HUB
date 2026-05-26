@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KPI Monitor — Reparto</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- ── AUTH GUARD ── -->
+<script src="../config/users.js"></script>
+<script src="../config/reparti.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>
+  (function(){
+    // ── CONFIGURA QUI: slug del reparto a cui questa pagina appartiene ──
+    window.__REPARTO_SLUG = 'operativo';
+    const s = AUTH.protect({ require: window.__REPARTO_SLUG, loginPath: '../login.html' });
+    if (!s) throw new Error('Redirect to login');
+  })();
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --sw:240px;--th:60px;--r:14px;--r2:10px;--r3:8px;
+  --indigo:#6366f1;--indigo2:#4f46e5;--indigo3:#4338ca;
+  --indigo-dim:rgba(99,102,241,0.08);
+  --green:#16a34a;--green-dim:rgba(22,163,74,0.1);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.1);
+  --amber:#d97706;--amber-dim:rgba(217,119,6,0.1);
+  --body:#f5f6fa;--surf:#fff;--surf2:#fafafa;--surf3:#f3f4f6;--surf4:#e5e7eb;
+  --border:rgba(17,24,39,0.06);--border2:rgba(17,24,39,0.12);
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --sb:#0d0f14;--sb2:#111318;
+  --sh:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.03);
+  --sh-md:0 4px 16px rgba(0,0,0,0.06);
+}
+html{color-scheme:light;}
+body{font-family:'Montserrat',system-ui,sans-serif;background:var(--body);color:var(--text);
+  min-height:100vh;display:flex;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--surf4);border-radius:10px;}
+
+#sb{width:var(--sw);background:linear-gradient(180deg,var(--sb),var(--sb2));min-height:100vh;
+  position:fixed;left:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:200;overflow-y:auto;
+  border-right:1px solid rgba(255,255,255,0.04);}
+.sb-logo{height:var(--th);display:flex;align-items:center;gap:11px;padding:0 18px;
+  border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;}
+.sb-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#818cf8,var(--indigo));
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:#fff;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(99,102,241,0.4);}
+.sb-brand{color:#f9fafb;font-weight:700;font-size:15px;}
+.sb-ver{color:rgba(255,255,255,0.25);font-size:10px;font-weight:500;letter-spacing:1px;
+  text-transform:uppercase;margin-top:2px;}
+.sb-nav{flex:1;padding:10px 0;}
+.sb-sec{color:rgba(255,255,255,0.28);font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:1.8px;padding:18px 18px 6px;display:flex;align-items:center;gap:8px;}
+.sb-sec::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05);}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;border-radius:var(--r2);
+  color:rgba(255,255,255,0.48);cursor:pointer;font-size:13px;font-weight:600;
+  transition:all .14s;user-select:none;position:relative;text-decoration:none;}
+.ni .ni-emoji{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.9;}
+.ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,.78);}
+.ni.active{background:rgba(99,102,241,0.18);color:#a5b4fc;font-weight:700;}
+.ni.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);
+  width:3px;height:20px;background:#818cf8;border-radius:2px;box-shadow:0 0 8px rgba(99,102,241,0.6);}
+.sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.sb-foot-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.3);margin-bottom:5px;}
+.sb-foot-val{color:rgba(255,255,255,.55);font-weight:700;font-size:10px;}
+
+#main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;overflow-x:hidden;min-width:0;}
+#topbar{height:var(--th);background:rgba(255,255,255,0.94);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;
+  position:sticky;top:0;z-index:100;}
+#bcrumb{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.chip-date{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:20px;border:1.5px solid var(--border2);color:var(--text3);}
+#content{padding:22px 24px;flex:1;}
+
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:14px;flex-wrap:wrap;}
+.ph-title{font-size:24px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:12px;}
+.ph-icon{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#818cf8,var(--indigo));
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;
+  box-shadow:0 6px 16px rgba(99,102,241,0.32);}
+.ph-sub{color:var(--text3);font-size:13px;font-weight:500;margin-top:4px;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px;}
+.kpi-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;
+  box-shadow:var(--sh);position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--col,var(--indigo));}
+.kpi-card-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.7px;margin-bottom:6px;}
+.kpi-card-val{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1.1;}
+.kpi-card-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:600;}
+.kpi-card-status{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:6px;text-transform:uppercase;letter-spacing:.4px;margin-top:8px;}
+.status-ok{background:var(--green-dim);color:#15803d;}
+.status-warn{background:var(--amber-dim);color:#a16207;}
+.status-err{background:var(--red-dim);color:#b91c1c;}
+
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:18px;
+  overflow:hidden;box-shadow:var(--sh);}
+.panel-hd{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;
+  gap:8px;background:var(--surf2);}
+.panel-title{font-weight:700;font-size:13.5px;color:var(--text2);flex:1;}
+.panel-body{padding:18px;}
+.chart-canvas-wrap{position:relative;height:280px;}
+
+.empty-banner{background:rgba(99,102,241,.05);border:1px dashed rgba(99,102,241,.3);
+  padding:24px;border-radius:12px;text-align:center;color:var(--text3);}
+.empty-banner h3{color:var(--text2);font-size:15px;font-weight:700;margin-bottom:8px;}
+.empty-banner p{font-size:13px;line-height:1.7;}
+.empty-banner code{background:#fff;padding:3px 8px;border-radius:6px;font-size:12px;border:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<nav id="sb">
+  <div class="sb-logo">
+    <div class="sb-mark">K</div>
+    <div><div class="sb-brand">KPI Monitor</div><div class="sb-ver" id="sb-ver">Reparto</div></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Navigazione</div>
+    <a class="ni" href="../hub.html" id="ni-hub">
+      <span class="ni-emoji">📊</span> Dashboard Master
+    </a>
+    <div class="sb-sec">Sezioni</div>
+    <div class="ni active">
+      <span class="ni-emoji" id="ni-icon">📁</span> <span id="ni-name">Reparto</span>
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-foot-row"><span>Aggiornato il</span><span class="sb-foot-val" id="sb-data">—</span></div>
+    <div class="sb-foot-row"><span>KPI tracciati</span><span class="sb-foot-val" id="sb-kpin">—</span></div>
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <strong id="bcrumb">Reparto</strong>
+    <div style="flex:1"></div>
+    <div class="chip-date" id="today-chip"></div>
+  </div>
+  <div id="content">
+
+    <div class="ph">
+      <div>
+        <div class="ph-title">
+          <span class="ph-icon" id="ph-icon">📁</span>
+          <span id="ph-name">Reparto</span>
+        </div>
+        <div class="ph-sub" id="ph-sub">Vista dettagliata dei KPI</div>
+      </div>
+    </div>
+
+    <div id="kpi-area"></div>
+
+    <div class="panel">
+      <div class="panel-hd"><span class="panel-title">📈 Andamento KPI</span></div>
+      <div class="panel-body">
+        <div class="chart-canvas-wrap"><canvas id="ch-kpi"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel" id="alert-panel" style="display:none">
+      <div class="panel-hd"><span class="panel-title">⚠️ Alert &amp; segnalazioni</span></div>
+      <div class="panel-body" id="alert-area"></div>
+    </div>
+
+    <div class="empty-banner" style="margin-top:24px">
+      <h3>💡 Personalizza questa pagina</h3>
+      <p>
+        Questa è una pagina reparto di base. I dati vengono letti dal file
+        <code>data/<span id="datafile-name">reparto.json</span></code>.<br>
+        Per aggiungere grafici personalizzati, tabelle o form di inserimento,
+        modifica direttamente questo file HTML.<br>
+        Vedi <code>reparti/acquisti.html</code> o <code>reparti/amministrazione.html</code>
+        per esempi avanzati.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Inserisci la barra utente (logout)
+document.addEventListener('DOMContentLoaded', () => AUTH.injectUserBar());
+
+// Trova il reparto dalla config
+const REP = (window.REPARTI || []).find(r => r.slug === window.__REPARTO_SLUG);
+if (REP) {
+  document.title = 'KPI Monitor — ' + REP.nome;
+  document.getElementById('bcrumb').textContent = REP.nome;
+  document.getElementById('ph-name').textContent = REP.nome;
+  document.getElementById('ni-name').textContent = REP.nome;
+  document.getElementById('sb-ver').textContent = REP.nome + ' 2026';
+  if (REP.icona) {
+    document.getElementById('ph-icon').textContent = REP.icona;
+    document.getElementById('ni-icon').textContent = REP.icona;
+  }
+  document.getElementById('datafile-name').textContent = REP.dataFile.replace('data/','');
+}
+
+// Today chip
+(function(){
+  const d = new Date();
+  const ms = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  document.getElementById('today-chip').textContent =
+    d.getDate() + ' ' + ms[d.getMonth()] + ' ' + d.getFullYear();
+})();
+
+function fmtVal(k){
+  if (k.display) return k.display;
+  if (typeof k.value === 'number') {
+    if (k.unit === '€' || k.unit === 'EUR') return '€ ' + k.value.toLocaleString('it-IT');
+    if (k.unit === '%') return k.value.toLocaleString('it-IT') + '%';
+    return k.value.toLocaleString('it-IT') + (k.unit ? ' ' + k.unit : '');
+  }
+  return String(k.value ?? '—');
+}
+function statusInfo(s){
+  s = (s || 'ok').toLowerCase();
+  if (s==='err'||s==='error'||s==='red'||s==='critical') return {cls:'err',txt:'Critico'};
+  if (s==='warn'||s==='warning'||s==='amber') return {cls:'warn',txt:'Warning'};
+  return {cls:'ok',txt:'In target'};
+}
+
+async function loadAndRender(){
+  if (!REP) return;
+  try {
+    const res = await fetch('../' + REP.dataFile + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    document.getElementById('kpi-area').innerHTML =
+      '<div class="empty-banner"><h3>📭 Dati non disponibili</h3>' +
+      '<p>Il file <code>' + REP.dataFile + '</code> non è stato trovato o è malformato.</p></div>';
+  }
+}
+
+function render(data){
+  const kpis = data.kpi || [];
+  document.getElementById('sb-data').textContent = data.ultimoAggiornamento || '—';
+  document.getElementById('sb-kpin').textContent = kpis.length;
+
+  // KPI cards
+  document.getElementById('kpi-area').innerHTML = '<div class="kpi-grid">' +
+    kpis.map(k => {
+      const st = statusInfo(k.status);
+      const col = st.cls==='err'?'#dc2626':st.cls==='warn'?'#d97706':'#16a34a';
+      return `<div class="kpi-card" style="--col:${col}">
+        <div class="kpi-card-lbl">${k.label||'KPI'}</div>
+        <div class="kpi-card-val">${fmtVal(k)}</div>
+        ${k.target!=null ? `<div class="kpi-card-sub">Target: ${k.target}${k.unit==='%'?'%':k.unit?(' '+k.unit):''}</div>`:''}
+        <div class="kpi-card-status status-${st.cls}">● ${st.txt}</div>
+      </div>`;
+    }).join('') + '</div>';
+
+  // Chart
+  const ctx = document.getElementById('ch-kpi').getContext('2d');
+  if (window.__chart) window.__chart.destroy();
+  window.__chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: kpis.map(k => k.label),
+      datasets: [
+        {
+          label: 'Valore',
+          data: kpis.map(k => Number(k.value)||0),
+          backgroundColor: kpis.map(k => {
+            const s = statusInfo(k.status).cls;
+            return s==='err'?'#ef4444':s==='warn'?'#f59e0b':'#10b981';
+          }),
+          borderRadius: 6
+        },
+        {
+          label: 'Target',
+          data: kpis.map(k => Number(k.target)||0),
+          backgroundColor: 'rgba(99,102,241,.25)',
+          borderColor: '#6366f1', borderWidth: 2, type: 'line',
+          fill: false, tension: 0
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels:{font:{size:11,family:'Montserrat',weight:'600'}} } },
+      scales: {
+        x: { ticks:{font:{size:10,family:'Montserrat'},maxRotation:30,minRotation:0} },
+        y: { beginAtZero: true, ticks:{font:{size:10,family:'Montserrat'}} }
+      }
+    }
+  });
+
+  // Alerts
+  const alerts = data.alerts || [];
+  if (alerts.length) {
+    document.getElementById('alert-panel').style.display = 'block';
+    document.getElementById('alert-area').innerHTML = alerts.map(a => `
+      <div style="display:flex;gap:12px;padding:10px 14px;border-radius:10px;
+                  background:${a.level==='crit'?'var(--red-dim)':a.level==='warn'?'var(--amber-dim)':'var(--indigo-dim)'};
+                  border:1px solid ${a.level==='crit'?'rgba(239,68,68,.2)':a.level==='warn'?'rgba(217,119,6,.2)':'rgba(99,102,241,.2)'};
+                  margin-bottom:8px;">
+        <div style="font-size:16px;">${a.level==='crit'?'🔴':a.level==='warn'?'🟡':'ℹ️'}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;">${a.title||'Alert'}</div>
+          <div style="font-size:11.5px;color:var(--text3);margin-top:3px;">${a.desc||''}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+loadAndRender();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "reparto": "operativo",
+  "nome": "Reparto Operativo",
+  "ultimoAggiornamento": "2026-01-15",
+  "kpi": [
+    {
+      "label": "Efficienza operativa",
+      "value": 87,
+      "unit": "%",
+      "target": 85,
+      "status": "ok"
+    },
+    {
+      "label": "Tempi di risposta",
+      "value": 4.2,
+      "unit": "h",
+      "target": 6,
+      "status": "ok"
+    },
+    {
+      "label": "Ticket aperti",
+      "value": 23,
+      "target": 20,
+      "status": "warn"
+    },
+    {
+      "label": "Customer satisfaction",
+      "value": 4.6,
+      "unit": "/5",
+      "target": 4.5,
+      "status": "ok"
+    }
+  ],
+  "alerts": []
+}

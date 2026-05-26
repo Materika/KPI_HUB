@@ -1,0 +1,42 @@
+{
+  "reparto": "vendite",
+  "nome": "Vendite",
+  "ultimoAggiornamento": "2026-01-15",
+  "kpi": [
+    {
+      "label": "Fatturato totale",
+      "value": 487000,
+      "unit": "€",
+      "target": 450000,
+      "status": "ok"
+    },
+    {
+      "label": "Nuovi clienti",
+      "value": 18,
+      "target": 20,
+      "status": "warn"
+    },
+    {
+      "label": "Conversion rate",
+      "value": 24,
+      "unit": "%",
+      "target": 22,
+      "status": "ok"
+    },
+    {
+      "label": "Ticket medio",
+      "value": 3850,
+      "unit": "€",
+      "target": 3500,
+      "status": "ok"
+    }
+  ],
+  "sottoReparti": [
+    { "slug": "materika", "nome": "Materika", "fatturato": 142000, "target": 130000 },
+    { "slug": "mike",     "nome": "Mike",     "fatturato": 98000,  "target": 100000 },
+    { "slug": "carlo",    "nome": "Carlo",    "fatturato": 87000,  "target": 80000  },
+    { "slug": "nicola",   "nome": "Nicola",   "fatturato": 76000,  "target": 75000  },
+    { "slug": "alberto",  "nome": "Alberto",  "fatturato": 84000,  "target": 85000  }
+  ],
+  "alerts": []
+}

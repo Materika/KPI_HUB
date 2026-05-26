@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KPI Monitor — Hub Master</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --sw:240px;--th:60px;--r:14px;--r2:10px;--r3:8px;
+  --indigo:#6366f1;--indigo2:#4f46e5;--indigo3:#4338ca;
+  --indigo-dim:rgba(99,102,241,0.08);
+  --green:#16a34a;--green-dim:rgba(22,163,74,0.1);
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.1);
+  --amber:#d97706;--amber-dim:rgba(217,119,6,0.1);
+  --body:#f5f6fa;--surf:#fff;--surf2:#fafafa;--surf3:#f3f4f6;--surf4:#e5e7eb;
+  --border:rgba(17,24,39,0.06);--border2:rgba(17,24,39,0.12);
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --sb:#0d0f14;--sb2:#111318;
+  --sh:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.03);
+  --sh-md:0 4px 16px rgba(0,0,0,0.06);
+  --sh-lg:0 12px 28px rgba(0,0,0,0.1);
+}
+html{color-scheme:light;}
+body{
+  font-family:'Montserrat',system-ui,sans-serif;
+  background:var(--body);color:var(--text);
+  min-height:100vh;display:flex;font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--surf4);border-radius:10px;}
+
+/* ── SIDEBAR ── */
+#sb{
+  width:var(--sw);background:linear-gradient(180deg,var(--sb),var(--sb2));
+  min-height:100vh;position:fixed;left:0;top:0;bottom:0;
+  display:flex;flex-direction:column;z-index:200;overflow-y:auto;
+  border-right:1px solid rgba(255,255,255,0.04);
+}
+.sb-logo{height:var(--th);display:flex;align-items:center;gap:11px;
+  padding:0 18px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;}
+.sb-mark{width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,#818cf8,var(--indigo));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:17px;color:#fff;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(99,102,241,0.4);}
+.sb-brand{color:#f9fafb;font-weight:700;font-size:15px;}
+.sb-ver{color:rgba(255,255,255,0.25);font-size:10px;font-weight:500;
+  letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.sb-nav{flex:1;padding:10px 0 14px;}
+.sb-sec{color:rgba(255,255,255,0.28);font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1.8px;padding:18px 18px 6px;
+  display:flex;align-items:center;gap:8px;}
+.sb-sec::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05);}
+.ni{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;
+  border-radius:var(--r2);color:rgba(255,255,255,0.48);cursor:pointer;
+  font-size:13px;font-weight:600;transition:all .14s;user-select:none;
+  position:relative;text-decoration:none;}
+.ni svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.ni .ni-emoji{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.9;}
+.ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,.78);}
+.ni.active{background:rgba(99,102,241,0.18);color:#a5b4fc;font-weight:700;}
+.ni.active::before{content:'';position:absolute;left:-8px;top:50%;
+  transform:translateY(-50%);width:3px;height:20px;
+  background:#818cf8;border-radius:2px;box-shadow:0 0 8px rgba(99,102,241,0.6);}
+.ni-badge{margin-left:auto;background:#ef4444;color:#fff;
+  font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;}
+.sb-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.sb-foot-row{display:flex;justify-content:space-between;font-size:11px;
+  color:rgba(255,255,255,.3);margin-bottom:5px;}
+.sb-foot-val{color:rgba(255,255,255,.55);font-weight:700;font-size:10px;}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;
+  overflow-x:hidden;min-width:0;}
+#topbar{height:var(--th);background:rgba(255,255,255,0.94);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:14px;
+  position:sticky;top:0;z-index:100;}
+#bcrumb{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.2px;}
+.chip-date{display:flex;align-items:center;gap:6px;font-size:12px;
+  font-weight:600;padding:5px 12px;border-radius:20px;
+  border:1.5px solid var(--border2);color:var(--text3);}
+#content{padding:22px 24px;flex:1;max-width:100%;}
+
+/* ── PAGE HEADER ── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:20px;gap:14px;flex-wrap:wrap;}
+.ph-title{font-size:24px;font-weight:800;letter-spacing:-.5px;
+  display:flex;align-items:center;gap:12px;}
+.ph-title .ph-icon{
+  width:46px;height:46px;border-radius:12px;
+  background:linear-gradient(135deg,#818cf8,var(--indigo));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:22px;
+  box-shadow:0 6px 16px rgba(99,102,241,0.32);}
+.ph-sub{color:var(--text3);font-size:13px;font-weight:500;margin-top:4px;}
+
+/* ── ALERT GLOBALI ── */
+.alerts-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.alert-pill{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:24px;font-size:12px;font-weight:700;
+  background:var(--red-dim);color:#b91c1c;border:1px solid rgba(239,68,68,0.2);
+}
+.alert-pill.warn{background:var(--amber-dim);color:#a16207;border-color:rgba(217,119,6,0.25);}
+.alert-pill.ok{background:var(--green-dim);color:#15803d;border-color:rgba(22,163,74,0.25);}
+
+/* ── KPI SUMMARY CARDS (top row) ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;margin-bottom:24px;}
+.kpi-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;box-shadow:var(--sh);position:relative;overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
+}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--sh-md);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;
+  height:3px;background:var(--col,var(--indigo));}
+.kpi-card-lbl{font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;}
+.kpi-card-val{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1.1;}
+.kpi-card-sub{font-size:11px;color:var(--text3);margin-top:6px;font-weight:600;}
+.kpi-card-delta{display:inline-flex;align-items:center;gap:3px;
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;margin-top:8px;}
+.delta-up{background:var(--green-dim);color:#15803d;}
+.delta-dn{background:var(--red-dim);color:#b91c1c;}
+.delta-eq{background:var(--surf3);color:var(--text3);}
+
+/* ── REPARTI CARDS (drag&drop) ── */
+.section-title{display:flex;align-items:center;justify-content:space-between;
+  margin:8px 0 14px;}
+.section-title h3{font-size:16px;font-weight:800;color:var(--text);
+  letter-spacing:-.2px;display:flex;align-items:center;gap:8px;}
+.section-title .hint{font-size:11px;color:var(--text3);font-weight:600;}
+
+#rep-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.rep-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--sh);overflow:hidden;
+  cursor:grab;transition:transform .15s,box-shadow .15s,opacity .15s;
+}
+.rep-card:hover{box-shadow:var(--sh-md);transform:translateY(-2px);}
+.rep-card.dragging{opacity:.45;cursor:grabbing;}
+.rep-card.drag-over{outline:2px dashed var(--indigo);outline-offset:-2px;}
+.rep-hd{padding:14px 16px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);position:relative;}
+.rep-hd::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--col,var(--indigo));}
+.rep-icon{font-size:20px;width:40px;height:40px;border-radius:10px;
+  background:var(--col-dim,var(--indigo-dim));
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rep-name{font-weight:800;font-size:14px;flex:1;letter-spacing:-.2px;}
+.rep-drag{color:var(--text4);cursor:grab;padding:4px;
+  display:flex;align-items:center;border-radius:6px;
+  transition:background .15s,color .15s;}
+.rep-drag:hover{background:var(--surf3);color:var(--text2);}
+
+.rep-body{padding:14px 16px;}
+.rep-status{display:flex;align-items:center;gap:6px;font-size:11px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.rep-status.ok{color:var(--green);}
+.rep-status.warn{color:var(--amber);}
+.rep-status.err{color:var(--red);}
+.rep-status.empty{color:var(--text4);}
+.rep-status::before{content:'';width:8px;height:8px;border-radius:50%;
+  background:currentColor;box-shadow:0 0 0 3px currentColor;
+  opacity:1;animation:pulse 2s infinite;}
+.rep-status.empty::before{animation:none;opacity:.4;}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 currentColor;}
+  50%{box-shadow:0 0 0 4px transparent;}
+}
+
+.rep-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  margin-bottom:12px;}
+.rep-kpi{
+  background:var(--surf2);border:1px solid var(--border);border-radius:8px;
+  padding:9px 11px;
+}
+.rep-kpi-lbl{font-size:9.5px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rep-kpi-val{font-size:15px;font-weight:800;letter-spacing:-.3px;line-height:1.1;}
+.rep-kpi-sub{font-size:10px;color:var(--text3);margin-top:2px;font-weight:600;}
+
+.rep-actions{display:flex;gap:8px;}
+.rep-btn{
+  flex:1;font-family:inherit;font-size:12px;font-weight:700;letter-spacing:.2px;
+  padding:8px 12px;border:none;border-radius:8px;cursor:pointer;
+  background:var(--indigo);color:#fff;text-align:center;text-decoration:none;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  box-shadow:0 2px 6px rgba(99,102,241,0.25);
+  transition:transform .12s,box-shadow .12s;
+}
+.rep-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(99,102,241,0.35);}
+.rep-btn-out{background:#fff;color:var(--text2);border:1.5px solid var(--border2);box-shadow:none;}
+.rep-btn-out:hover{background:var(--surf3);transform:none;box-shadow:none;}
+
+/* ── CHARTS PANEL ── */
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:18px;overflow:hidden;box-shadow:var(--sh);}
+.panel-hd{padding:13px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;background:var(--surf2);}
+.panel-title{font-weight:700;font-size:13.5px;color:var(--text2);flex:1;
+  display:flex;align-items:center;gap:6px;}
+.panel-body{padding:18px;}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:18px;}
+.chart-box{background:var(--surf2);border:1px solid var(--border);border-radius:10px;
+  padding:14px;}
+.chart-box-title{font-size:12px;font-weight:700;color:var(--text2);
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.chart-canvas-wrap{position:relative;height:240px;}
+
+/* ── ALERT LIST PANEL ── */
+.alert-list{display:flex;flex-direction:column;gap:8px;}
+.alert-row{display:flex;align-items:center;gap:12px;padding:10px 14px;
+  border-radius:10px;background:var(--surf2);border:1px solid var(--border);}
+.alert-row.crit{background:var(--red-dim);border-color:rgba(239,68,68,0.2);}
+.alert-row.warn{background:var(--amber-dim);border-color:rgba(217,119,6,0.2);}
+.alert-row.info{background:var(--indigo-dim);border-color:rgba(99,102,241,0.2);}
+.alert-icon{font-size:16px;flex-shrink:0;}
+.alert-text{flex:1;}
+.alert-tit{font-size:12.5px;font-weight:700;color:var(--text);}
+.alert-desc{font-size:11px;color:var(--text3);margin-top:2px;}
+.alert-rep{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;padding:3px 8px;border-radius:8px;
+  background:rgba(255,255,255,0.7);color:var(--text2);}
+
+/* Empty state */
+.empty-state{padding:30px 20px;text-align:center;color:var(--text3);}
+.empty-state .ico{font-size:36px;margin-bottom:8px;opacity:.5;}
+.empty-state p{font-size:13px;font-weight:500;}
+
+/* Loading shimmer */
+.shimmer{
+  display:inline-block;background:linear-gradient(90deg,var(--surf3) 0,var(--surf4) 50%,var(--surf3) 100%);
+  background-size:200% 100%;animation:shim 1.4s infinite linear;border-radius:4px;
+  color:transparent;
+}
+@keyframes shim{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+</style>
+</head>
+<body>
+
+<nav id="sb">
+  <div class="sb-logo">
+    <div class="sb-mark">K</div>
+    <div><div class="sb-brand">KPI Monitor</div><div class="sb-ver">Hub Master 2026</div></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Panoramica</div>
+    <div class="ni active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Dashboard Master
+    </div>
+    <div class="sb-sec">Reparti</div>
+    <div id="sb-reparti"></div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-foot-row"><span>Reparti</span><span class="sb-foot-val" id="sb-rep-n">—</span></div>
+    <div class="sb-foot-row"><span>Alert</span><span class="sb-foot-val" id="sb-alert-n" style="color:#fca5a5">0</span></div>
+    <div class="sb-foot-row"><span>Ultimo refresh</span><span class="sb-foot-val" id="sb-refresh">—</span></div>
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <strong id="bcrumb">Dashboard Master</strong>
+    <div style="flex:1"></div>
+    <div class="chip-date" id="today-chip"></div>
+    <button class="rep-btn rep-btn-out" style="padding:6px 12px;flex:none" onclick="loadAll()">↻ Refresh</button>
+  </div>
+
+  <div id="content">
+
+    <div class="ph">
+      <div>
+        <div class="ph-title">
+          <span class="ph-icon">📊</span>
+          Hub Master KPI
+        </div>
+        <div class="ph-sub">Vista aggregata di tutti i reparti · Trascina le card per riordinarle</div>
+      </div>
+    </div>
+
+    <!-- Alert riepilogativi -->
+    <div class="alerts-row" id="alerts-row"></div>
+
+    <!-- KPI Summary -->
+    <div class="kpi-grid" id="kpi-summary"></div>
+
+    <!-- Reparti -->
+    <div class="section-title">
+      <h3>📂 Reparti</h3>
+      <span class="hint">Trascina per riordinare</span>
+    </div>
+    <div id="rep-list"></div>
+
+    <!-- Alert dettagliati -->
+    <div class="panel" style="margin-top:24px">
+      <div class="panel-hd">
+        <span class="panel-title">⚠️ Alert &amp; segnalazioni dai reparti</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:600" id="alert-count-lbl">—</span>
+      </div>
+      <div class="panel-body">
+        <div class="alert-list" id="alert-list"></div>
+      </div>
+    </div>
+
+    <!-- Grafici comparativi -->
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">📈 Confronto Reparti — Performance vs Target</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-grid">
+          <div class="chart-box">
+            <div class="chart-box-title">Stato KPI per reparto</div>
+            <div class="chart-canvas-wrap"><canvas id="ch-stato"></canvas></div>
+          </div>
+          <div class="chart-box">
+            <div class="chart-box-title">Numero KPI tracciati</div>
+            <div class="chart-canvas-wrap"><canvas id="ch-kpis"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="config/users.js"></script>
+<script src="config/reparti.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+// ── Protezione: solo MASTER può vedere questa pagina ──────
+const session = AUTH.protect({ require: 'master' });
+if (!session) {
+  // protect ha già fatto il redirect
+  throw new Error('Redirecting to login');
+}
+AUTH.injectUserBar();
+
+// ── STATO ─────────────────────────────────────────────────
+const ORDER_KEY = 'kpihub_rep_order';
+let repartiData = {}; // slug -> dati JSON
+
+// Carica ordine custom (se presente) altrimenti usa quello di REPARTI
+function getOrderedReparti() {
+  const customOrder = JSON.parse(localStorage.getItem(ORDER_KEY) || 'null');
+  if (!customOrder || !Array.isArray(customOrder)) return [...REPARTI];
+  // mantieni eventuali reparti aggiunti dopo
+  const map = Object.fromEntries(REPARTI.map(r => [r.slug, r]));
+  const ordered = customOrder.map(s => map[s]).filter(Boolean);
+  REPARTI.forEach(r => { if (!ordered.find(o => o.slug === r.slug)) ordered.push(r); });
+  return ordered;
+}
+
+function saveOrder(slugs) {
+  localStorage.setItem(ORDER_KEY, JSON.stringify(slugs));
+}
+
+// ── UI: today chip ────────────────────────────────────────
+(function(){
+  const d = new Date();
+  const ms = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  document.getElementById('today-chip').textContent =
+    d.getDate() + ' ' + ms[d.getMonth()] + ' ' + d.getFullYear();
+})();
+
+// ── Sidebar reparti ───────────────────────────────────────
+function renderSidebarReparti(){
+  const sb = document.getElementById('sb-reparti');
+  const reps = getOrderedReparti();
+  sb.innerHTML = reps.map(r => `
+    <a class="ni" href="${r.file}">
+      <span class="ni-emoji">${r.icona || '📁'}</span>
+      ${r.nome}
+    </a>
+  `).join('');
+  document.getElementById('sb-rep-n').textContent = reps.length;
+}
+
+// ── Carica dati di un reparto dal JSON ────────────────────
+async function loadReparto(r) {
+  try {
+    const res = await fetch(r.dataFile + '?t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    repartiData[r.slug] = json;
+    return json;
+  } catch (e) {
+    repartiData[r.slug] = null;
+    return null;
+  }
+}
+
+async function loadAll() {
+  document.getElementById('sb-refresh').textContent = 'Caricamento…';
+  await Promise.all(REPARTI.map(r => loadReparto(r)));
+  document.getElementById('sb-refresh').textContent = new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  renderAll();
+}
+
+// ── Aggrega KPI summary (top cards) ───────────────────────
+function computeSummary() {
+  const reps = REPARTI;
+  let totKpi = 0, totOk = 0, totWarn = 0, totErr = 0;
+  let repartiPopolati = 0;
+
+  reps.forEach(r => {
+    const d = repartiData[r.slug];
+    if (!d || !d.kpi) return;
+    repartiPopolati++;
+    (d.kpi || []).forEach(k => {
+      totKpi++;
+      const status = (k.status || 'ok').toLowerCase();
+      if (status === 'ok' || status === 'green') totOk++;
+      else if (status === 'warn' || status === 'warning' || status === 'amber') totWarn++;
+      else if (status === 'err' || status === 'error' || status === 'red' || status === 'critical') totErr++;
+    });
+  });
+  return { totKpi, totOk, totWarn, totErr, repartiPopolati, repartiTotali: reps.length };
+}
+
+function renderKpiSummary() {
+  const s = computeSummary();
+  const pctOk = s.totKpi ? Math.round(s.totOk / s.totKpi * 100) : 0;
+  const cards = [
+    { lbl: 'Reparti attivi', val: s.repartiPopolati + '/' + s.repartiTotali, sub: 'con dati caricati', col: 'var(--indigo)' },
+    { lbl: 'KPI totali tracciati', val: s.totKpi, sub: 'su tutti i reparti', col: 'var(--indigo)' },
+    { lbl: 'KPI in target', val: pctOk + '%', sub: s.totOk + ' su ' + s.totKpi, col: 'var(--green)' },
+    { lbl: 'Alert critici', val: s.totErr, sub: s.totWarn + ' warning', col: s.totErr > 0 ? 'var(--red)' : 'var(--green)' }
+  ];
+  document.getElementById('kpi-summary').innerHTML = cards.map(c => `
+    <div class="kpi-card" style="--col:${c.col}">
+      <div class="kpi-card-lbl">${c.lbl}</div>
+      <div class="kpi-card-val">${c.val}</div>
+      <div class="kpi-card-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ── Alert pills (top) ─────────────────────────────────────
+function renderAlertsRow() {
+  const s = computeSummary();
+  const row = document.getElementById('alerts-row');
+  const items = [];
+  if (s.totErr > 0) items.push(`<div class="alert-pill">⚠ ${s.totErr} KPI critici</div>`);
+  if (s.totWarn > 0) items.push(`<div class="alert-pill warn">⚠ ${s.totWarn} KPI in warning</div>`);
+  const repMancanti = s.repartiTotali - s.repartiPopolati;
+  if (repMancanti > 0) items.push(`<div class="alert-pill warn">📭 ${repMancanti} reparti senza dati</div>`);
+  if (items.length === 0 && s.repartiPopolati > 0) items.push(`<div class="alert-pill ok">✓ Tutti i KPI in linea</div>`);
+  row.innerHTML = items.join('');
+
+  document.getElementById('sb-alert-n').textContent = s.totErr + s.totWarn;
+}
+
+// ── Render reparti (card draggabili) ──────────────────────
+function getRepStatus(d) {
+  if (!d || !d.kpi || d.kpi.length === 0) return { cls: 'empty', txt: 'Nessun dato' };
+  let err = 0, warn = 0;
+  d.kpi.forEach(k => {
+    const s = (k.status || 'ok').toLowerCase();
+    if (s === 'err' || s === 'error' || s === 'red' || s === 'critical') err++;
+    else if (s === 'warn' || s === 'warning' || s === 'amber') warn++;
+  });
+  if (err > 0) return { cls: 'err', txt: err + ' alert critici' };
+  if (warn > 0) return { cls: 'warn', txt: warn + ' warning' };
+  return { cls: 'ok', txt: 'In linea con target' };
+}
+
+function fmtKpiVal(k) {
+  if (k.display) return k.display;
+  if (typeof k.value === 'number') {
+    if (k.unit === '€' || k.unit === 'EUR') return '€ ' + k.value.toLocaleString('it-IT');
+    if (k.unit === '%') return k.value.toLocaleString('it-IT') + '%';
+    return k.value.toLocaleString('it-IT') + (k.unit ? ' ' + k.unit : '');
+  }
+  return String(k.value ?? '—');
+}
+
+function renderReparti() {
+  const reps = getOrderedReparti();
+  const list = document.getElementById('rep-list');
+  list.innerHTML = reps.map(r => {
+    const d = repartiData[r.slug];
+    const status = getRepStatus(d);
+    const topKpis = (d && d.kpi || []).slice(0, 4);
+    const colDim = r.colore + '1a'; // alpha ~10%
+    return `
+      <div class="rep-card" draggable="true" data-slug="${r.slug}" style="--col:${r.colore};--col-dim:${colDim}">
+        <div class="rep-hd">
+          <div class="rep-icon">${r.icona || '📁'}</div>
+          <div class="rep-name">${r.nome}</div>
+          <div class="rep-drag" title="Trascina per riordinare">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+          </div>
+        </div>
+        <div class="rep-body">
+          <div class="rep-status ${status.cls}">${status.txt}</div>
+          ${topKpis.length ? `
+            <div class="rep-kpis">
+              ${topKpis.map(k => `
+                <div class="rep-kpi">
+                  <div class="rep-kpi-lbl" title="${k.label||''}">${k.label||'KPI'}</div>
+                  <div class="rep-kpi-val">${fmtKpiVal(k)}</div>
+                  ${k.target!=null ? `<div class="rep-kpi-sub">Target: ${k.target}${k.unit==='%'?'%':''}</div>`:''}
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <div class="empty-state" style="padding:14px 0">
+              <div class="ico">📭</div>
+              <p>Nessun dato disponibile.<br>Aggiorna <code>${r.dataFile}</code></p>
+            </div>
+          `}
+          <div class="rep-actions">
+            <a class="rep-btn" href="${r.file}">Apri reparto →</a>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  attachDragHandlers();
+}
+
+// ── Drag & drop ───────────────────────────────────────────
+function attachDragHandlers() {
+  const cards = document.querySelectorAll('#rep-list .rep-card');
+  let dragged = null;
+  cards.forEach(c => {
+    c.addEventListener('dragstart', e => {
+      dragged = c; c.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    c.addEventListener('dragend', () => {
+      c.classList.remove('dragging');
+      cards.forEach(x => x.classList.remove('drag-over'));
+      // Salva nuovo ordine
+      const newOrder = [...document.querySelectorAll('#rep-list .rep-card')].map(x => x.dataset.slug);
+      saveOrder(newOrder);
+      renderSidebarReparti();
+    });
+    c.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragged && dragged !== c) c.classList.add('drag-over');
+    });
+    c.addEventListener('dragleave', () => c.classList.remove('drag-over'));
+    c.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged || dragged === c) return;
+      const list = document.getElementById('rep-list');
+      const rect = c.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      list.insertBefore(dragged, after ? c.nextSibling : c);
+      c.classList.remove('drag-over');
+    });
+  });
+}
+
+// ── Alert dettagliati ─────────────────────────────────────
+function collectAlerts() {
+  const alerts = [];
+  REPARTI.forEach(r => {
+    const d = repartiData[r.slug];
+    if (!d) return;
+    (d.alerts || []).forEach(a => alerts.push({ ...a, reparto: r.nome, repSlug: r.slug }));
+    // Anche KPI in stato err/warn diventano alert
+    (d.kpi || []).forEach(k => {
+      const s = (k.status || 'ok').toLowerCase();
+      if (s === 'err' || s === 'error' || s === 'red' || s === 'critical') {
+        alerts.push({
+          level: 'crit',
+          title: k.label + ' fuori target',
+          desc: 'Valore: ' + fmtKpiVal(k) + (k.target!=null ? ' · Target: ' + k.target : ''),
+          reparto: r.nome, repSlug: r.slug
+        });
+      } else if (s === 'warn' || s === 'warning' || s === 'amber') {
+        alerts.push({
+          level: 'warn',
+          title: k.label + ' in warning',
+          desc: 'Valore: ' + fmtKpiVal(k) + (k.target!=null ? ' · Target: ' + k.target : ''),
+          reparto: r.nome, repSlug: r.slug
+        });
+      }
+    });
+  });
+  return alerts;
+}
+
+function renderAlertsList() {
+  const alerts = collectAlerts();
+  const list = document.getElementById('alert-list');
+  document.getElementById('alert-count-lbl').textContent = alerts.length + ' totali';
+
+  if (!alerts.length) {
+    list.innerHTML = '<div class="empty-state"><div class="ico">✅</div><p>Nessun alert attivo. Tutti i reparti sono in linea con i target.</p></div>';
+    return;
+  }
+  // ordina per livello: crit > warn > info
+  const ord = { crit:0, warn:1, info:2 };
+  alerts.sort((a,b)=> (ord[a.level]??3) - (ord[b.level]??3));
+
+  list.innerHTML = alerts.map(a => {
+    const icon = a.level === 'crit' ? '🔴' : a.level === 'warn' ? '🟡' : 'ℹ️';
+    return `
+      <div class="alert-row ${a.level||'info'}">
+        <div class="alert-icon">${icon}</div>
+        <div class="alert-text">
+          <div class="alert-tit">${a.title || 'Alert'}</div>
+          <div class="alert-desc">${a.desc || ''}</div>
+        </div>
+        <div class="alert-rep">${a.reparto}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Grafici ───────────────────────────────────────────────
+let chStato = null, chKpis = null;
+function renderCharts() {
+  const reps = getOrderedReparti();
+  const labels = reps.map(r => r.nome);
+
+  const ok = [], wa = [], er = [];
+  const ntot = [];
+  reps.forEach(r => {
+    const d = repartiData[r.slug];
+    if (!d || !d.kpi) { ok.push(0); wa.push(0); er.push(0); ntot.push(0); return; }
+    let o=0,w=0,e=0;
+    d.kpi.forEach(k => {
+      const s = (k.status||'ok').toLowerCase();
+      if (s==='err'||s==='error'||s==='red'||s==='critical') e++;
+      else if (s==='warn'||s==='warning'||s==='amber') w++;
+      else o++;
+    });
+    ok.push(o); wa.push(w); er.push(e); ntot.push(d.kpi.length);
+  });
+
+  if (chStato) chStato.destroy();
+  chStato = new Chart(document.getElementById('ch-stato'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'OK', data: ok, backgroundColor: '#16a34a', stack: 's' },
+        { label: 'Warning', data: wa, backgroundColor: '#d97706', stack: 's' },
+        { label: 'Critici', data: er, backgroundColor: '#dc2626', stack: 's' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels:{font:{size:11,family:'Montserrat',weight:'600'}} } },
+      scales: {
+        x: { stacked: true, ticks:{font:{size:10,family:'Montserrat'}} },
+        y: { stacked: true, beginAtZero: true, ticks:{precision:0,font:{size:10,family:'Montserrat'}} }
+      }
+    }
+  });
+
+  if (chKpis) chKpis.destroy();
+  chKpis = new Chart(document.getElementById('ch-kpis'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: ntot,
+        backgroundColor: reps.map(r => r.colore || '#6366f1'),
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: {font:{size:11,family:'Montserrat',weight:'600'},boxWidth:12} } }
+    }
+  });
+}
+
+// ── Render globale ────────────────────────────────────────
+function renderAll() {
+  renderKpiSummary();
+  renderAlertsRow();
+  renderReparti();
+  renderAlertsList();
+  renderCharts();
+}
+
+// ── Avvio ─────────────────────────────────────────────────
+renderSidebarReparti();
+renderAll(); // primo render con dati vuoti
+loadAll();   // poi carica i JSON e re-renderizza
+</script>
+
+</body>
+</html>

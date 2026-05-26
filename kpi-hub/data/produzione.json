@@ -1,0 +1,42 @@
+{
+  "reparto": "produzione",
+  "nome": "Produzione",
+  "ultimoAggiornamento": "2026-01-15",
+  "kpi": [
+    {
+      "label": "Produzione mensile",
+      "value": 12400,
+      "unit": "pz",
+      "target": 12000,
+      "status": "ok"
+    },
+    {
+      "label": "Scarto produttivo",
+      "value": 3.8,
+      "unit": "%",
+      "target": 3,
+      "status": "err"
+    },
+    {
+      "label": "OEE",
+      "value": 78,
+      "unit": "%",
+      "target": 80,
+      "status": "warn"
+    },
+    {
+      "label": "Tempo ciclo medio",
+      "value": 42,
+      "unit": "min",
+      "target": 45,
+      "status": "ok"
+    }
+  ],
+  "alerts": [
+    {
+      "level": "crit",
+      "title": "Scarto produttivo sopra soglia",
+      "desc": "Scarto al 3.8% contro target 3%. Servirebbe revisione macchina linea B."
+    }
+  ]
+}
