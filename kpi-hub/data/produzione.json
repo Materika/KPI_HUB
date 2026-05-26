@@ -1,0 +1,230 @@
+{
+  "reparto": "produzione",
+  "nome": "Produzione",
+  "ultimoAggiornamento": "2026-05-15",
+  "kpiMensili": [
+    {
+      "id": "produzione",
+      "label": "Produzione Mensile",
+      "icon": "🏭",
+      "unit": "pz",
+      "isLowerBetter": false,
+      "valori": [
+        12981,
+        13038,
+        12370,
+        11927,
+        11408,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        11799,
+        11445,
+        11977,
+        11266,
+        11997,
+        11081,
+        12055,
+        11922,
+        11341,
+        11570,
+        11834,
+        10935
+      ],
+      "target": [
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000,
+        12000
+      ],
+      "azioni": {
+        "ok": "✓ Volumi in target.",
+        "amber": "△ Volumi sotto target. Verificare turni.",
+        "warn": "⚠ Volumi insufficienti. Azioni urgenti."
+      }
+    },
+    {
+      "id": "scarto",
+      "label": "Scarto Produttivo",
+      "icon": "♻️",
+      "unit": "%",
+      "isLowerBetter": true,
+      "valori": [
+        3.56,
+        3.82,
+        3.25,
+        3.82,
+        3.69,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        4.19,
+        3.61,
+        3.34,
+        4.14,
+        4.15,
+        3.74,
+        3.34,
+        3.45,
+        3.95,
+        3.56,
+        4.31,
+        3.9
+      ],
+      "target": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "azioni": {
+        "ok": "✓ Scarto sotto target. Qualità ottima.",
+        "amber": "△ Scarto in aumento. Tarare macchine.",
+        "warn": "⚠ Scarto critico. Manutenzione straordinaria."
+      }
+    },
+    {
+      "id": "oee",
+      "label": "OEE",
+      "icon": "📊",
+      "unit": "%",
+      "isLowerBetter": false,
+      "valori": [
+        76.64,
+        80.23,
+        77.9,
+        82.42,
+        82.24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        75.11,
+        76.08,
+        76.48,
+        77.29,
+        78.57,
+        71.46,
+        73.96,
+        75.76,
+        73.53,
+        75.67,
+        71.92,
+        77.85
+      ],
+      "target": [
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80,
+        80
+      ],
+      "azioni": {
+        "ok": "✓ OEE in target.",
+        "amber": "△ OEE in calo. Verificare disponibilità impianti.",
+        "warn": "⚠ OEE critico. Audit completo linea."
+      }
+    },
+    {
+      "id": "tempoCiclo",
+      "label": "Tempo Ciclo Medio",
+      "icon": "⏱",
+      "unit": "min",
+      "isLowerBetter": true,
+      "valori": [
+        43.22,
+        39.7,
+        44.4,
+        41.39,
+        40.39,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        45.85,
+        42.67,
+        43.33,
+        49.36,
+        47.82,
+        41.52,
+        48.56,
+        41.56,
+        44.46,
+        49.72,
+        47.11,
+        44.22
+      ],
+      "target": [
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45,
+        45
+      ],
+      "azioni": {
+        "ok": "✓ Tempi ciclo ottimizzati.",
+        "amber": "△ Tempi in aumento.",
+        "warn": "⚠ Tempi fuori target. Rivedere processo."
+      }
+    }
+  ],
+  "alerts": [
+    {
+      "level": "crit",
+      "title": "Linea B richiede manutenzione",
+      "desc": "Scarto in aumento sulla linea B. Programmare intervento entro 7 giorni."
+    }
+  ]
+}
