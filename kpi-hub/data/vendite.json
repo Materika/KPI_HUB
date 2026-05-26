@@ -1,0 +1,257 @@
+{
+  "reparto": "vendite",
+  "nome": "Vendite",
+  "ultimoAggiornamento": "2026-05-15",
+  "kpiMensili": [
+    {
+      "id": "fatturato",
+      "label": "Fatturato Totale",
+      "icon": "💰",
+      "unit": "€",
+      "isLowerBetter": false,
+      "valori": [
+        435542,
+        420713,
+        453400,
+        426494,
+        416623,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        410080,
+        462129,
+        450285,
+        446728,
+        391970,
+        423697,
+        397489,
+        387004,
+        380303,
+        391211,
+        463089,
+        453155
+      ],
+      "target": [
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000,
+        450000
+      ],
+      "azioni": {
+        "ok": "✓ Fatturato sopra target. Performance eccellente.",
+        "amber": "△ Fatturato vicino al target. Spingere su pipeline.",
+        "warn": "⚠ Fatturato sotto target. Revisione strategia commerciale."
+      }
+    },
+    {
+      "id": "nuoviClienti",
+      "label": "Nuovi Clienti",
+      "icon": "👤",
+      "unit": "",
+      "isLowerBetter": false,
+      "valori": [
+        21.91,
+        21.85,
+        16.09,
+        17.19,
+        20.21,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        16.74,
+        17.66,
+        17.85,
+        11.9,
+        15.79,
+        16.29,
+        15.04,
+        12.58,
+        14.8,
+        11.92,
+        18.26,
+        17.74
+      ],
+      "target": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "azioni": {
+        "ok": "✓ Acquisizione clienti in target.",
+        "amber": "△ Acquisizione sotto target. Rivedere lead generation.",
+        "warn": "⚠ Crescita ferma. Investire su nuovi canali."
+      }
+    },
+    {
+      "id": "conversion",
+      "label": "Conversion Rate",
+      "icon": "🎯",
+      "unit": "%",
+      "isLowerBetter": false,
+      "valori": [
+        23.33,
+        21.62,
+        25.82,
+        23.5,
+        25.64,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        22.09,
+        20.05,
+        19.48,
+        20.59,
+        19.59,
+        17.97,
+        18.83,
+        21.88,
+        17.26,
+        17.28,
+        20.76,
+        18.68
+      ],
+      "target": [
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22
+      ],
+      "azioni": {
+        "ok": "✓ Tasso conversione ottimo.",
+        "amber": "△ Conversione in calo. Analizzare pipeline.",
+        "warn": "⚠ Conversione critica. Formazione team commerciale."
+      }
+    },
+    {
+      "id": "ticketMedio",
+      "label": "Ticket Medio",
+      "icon": "🛒",
+      "unit": "€",
+      "isLowerBetter": false,
+      "valori": [
+        3831,
+        3773,
+        3656,
+        4253,
+        3522,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        3426,
+        3250,
+        3611,
+        3312,
+        3378,
+        3707,
+        3349,
+        3549,
+        3839,
+        3164,
+        3131,
+        3272
+      ],
+      "target": [
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500,
+        3500
+      ],
+      "azioni": {
+        "ok": "✓ Ticket medio sopra target.",
+        "amber": "△ Ticket in calo. Promuovere upselling.",
+        "warn": "⚠ Ticket basso. Rivedere mix prodotti."
+      }
+    }
+  ],
+  "sottoReparti": [
+    {
+      "slug": "materika",
+      "nome": "Materika",
+      "fatturato": 142000,
+      "target": 130000
+    },
+    {
+      "slug": "mike",
+      "nome": "Mike",
+      "fatturato": 98000,
+      "target": 100000
+    },
+    {
+      "slug": "carlo",
+      "nome": "Carlo",
+      "fatturato": 87000,
+      "target": 80000
+    },
+    {
+      "slug": "nicola",
+      "nome": "Nicola",
+      "fatturato": 76000,
+      "target": 75000
+    },
+    {
+      "slug": "alberto",
+      "nome": "Alberto",
+      "fatturato": 84000,
+      "target": 85000
+    }
+  ],
+  "alerts": [],
+  "_nota": "Dati di esempio. Sovrascritti automaticamente dal bridge quando apri il file del reparto. Per esportare i dati reali, apri il reparto e clicca \"📤 Esporta JSON\"."
+}

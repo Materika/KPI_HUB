@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KPI Monitor — Logistica</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="../config/users.js"></script>
+<script src="../config/reparti.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>
+  (function() {
+    const s = AUTH.protect({ require: 'logistica', loginPath: '../login.html' });
+    if (!s) throw new Error('Redirect to login');
+  })();
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Montserrat',system-ui,sans-serif;
+  background:linear-gradient(135deg,#f5f6fa,#eef0f7);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  padding:20px;color:#111827;}
+.box{max-width:520px;width:100%;background:#fff;border-radius:18px;
+  padding:40px;text-align:center;
+  box-shadow:0 16px 48px rgba(0,0,0,.08);
+  border:1px solid rgba(17,24,39,0.06);}
+.ico{font-size:64px;margin-bottom:18px;display:block;}
+h1{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px;}
+.sub{color:#6b7280;font-size:14px;font-weight:500;margin-bottom:24px;}
+.tag{display:inline-block;background:rgba(99,102,241,.1);color:#4338ca;
+  padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;
+  letter-spacing:.8px;text-transform:uppercase;margin-bottom:24px;
+  border:1px solid rgba(99,102,241,.18);}
+.steps{background:#fafafa;border-radius:12px;padding:20px 22px;
+  border:1px solid rgba(17,24,39,0.06);text-align:left;margin-bottom:20px;}
+.steps h3{font-size:13px;font-weight:800;text-transform:uppercase;
+  letter-spacing:.7px;color:#374151;margin-bottom:12px;}
+.steps ol{padding-left:22px;color:#374151;font-size:13.5px;line-height:1.8;}
+.steps code{background:#e5e7eb;padding:2px 7px;border-radius:5px;
+  font-family:'DM Mono','Menlo',monospace;font-size:12px;color:#1f2937;}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px;}
+.btn{display:inline-flex;align-items:center;gap:6px;
+  padding:10px 18px;border-radius:10px;text-decoration:none;
+  font-size:13px;font-weight:700;letter-spacing:.2px;cursor:pointer;border:none;}
+.btn-primary{background:#6366f1;color:#fff;
+  box-shadow:0 4px 12px rgba(99,102,241,.3);}
+.btn-primary:hover{background:#4f46e5;}
+.btn-ghost{background:#fff;color:#374151;border:1.5px solid #e5e7eb;}
+.btn-ghost:hover{background:#fafafa;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <span class="ico">🚚</span>
+  <span class="tag">Placeholder · In attesa di caricamento</span>
+  <h1>Reparto Logistica</h1>
+  <p class="sub">La pagina dei KPI per questo reparto non è ancora stata caricata.</p>
+
+  <div class="steps">
+    <h3>📋 Come caricare la pagina KPI</h3>
+    <ol>
+      <li>Sostituisci il file <code>reparti/logistica.html</code> sul repo GitHub con il tuo HTML personalizzato.</li>
+      <li>Inserisci in cima al tuo HTML, subito dopo <code>&lt;head&gt;</code>, lo snippet di protezione che trovi nel <code>README.md</code> (sezione "Aggiungere un nuovo reparto").</li>
+      <li>Fai commit — la pagina sarà online in 1-2 minuti.</li>
+    </ol>
+  </div>
+
+  <div class="btns">
+    <a href="../hub.html" class="btn btn-primary" id="btn-hub" style="display:none">← Dashboard Master</a>
+    <button class="btn btn-ghost" onclick="AUTH.logout('../login.html')">Esci</button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    AUTH.injectUserBar();
+    const s = AUTH.current();
+    if (s && s.role === 'master') {
+      document.getElementById('btn-hub').style.display = 'inline-flex';
+    }
+  });
+</script>
+
+</body>
+</html>

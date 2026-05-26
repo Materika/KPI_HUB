@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>KPI Monitor</title>
+<meta http-equiv="refresh" content="0;url=login.html">
+<script src="config/users.js"></script>
+<script src="config/reparti.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+// Redirect intelligente: se sono già loggato, vado direttamente alla mia destinazione
+(function(){
+  const s = AUTH.current();
+  if (!s) { window.location.replace('login.html'); return; }
+  if (s.role === 'master') {
+    window.location.replace('hub.html');
+  } else {
+    const r = (window.REPARTI || []).find(x => x.slug === s.reparto);
+    window.location.replace(r && r.file ? r.file : 'login.html');
+  }
+})();
+</script>
+</head>
+<body>
+<p style="font-family:system-ui;padding:20px;color:#666">Reindirizzamento in corso… <a href="login.html">Vai al login</a></p>
+</body>
+</html>

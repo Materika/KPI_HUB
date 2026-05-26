@@ -1,0 +1,9 @@
+{
+  "reparto": "produzione",
+  "nome": "Produzione",
+  "ultimoAggiornamento": "—",
+  "kpiMensili": [],
+  "alerts": [],
+  "_placeholder": true,
+  "_nota": "Reparto non ancora caricato. Carica il file HTML in reparti/<slug>.html e i dati appariranno qui automaticamente."
+}

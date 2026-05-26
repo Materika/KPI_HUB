@@ -1,0 +1,2641 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<!-- ═══ KPI Hub - Auth Guard (iniettato, non modificare) ═══ -->
+<script src="../config/users.js"></script>
+<script src="../config/reparti.js"></script>
+<script src="../assets/js/auth.js"></script>
+<script>
+  (function() {
+    const s = AUTH.protect({ require: 'acquisti', loginPath: '../login.html' });
+    if (!s) throw new Error('Redirect to login');
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof AUTH !== 'undefined' && AUTH.injectUserBar) AUTH.injectUserBar();
+    });
+  })();
+</script>
+<!-- ═══ Fine Auth Guard ═══ -->
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI Monitor — Hub Reparti</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --sw:220px;--th:60px;--r:14px;--r2:8px;
+  /* Palette — Luxury Minimal */
+  --accent:#6366f1;--accent2:#4f46e5;   /* indigo raffinato */
+  --blue:#6366f1;--blue2:#4f46e5;
+  --red:#ef4444;--red-dim:rgba(239,68,68,0.08);
+  --green:#16a34a;
+  --amber:#f59e0b;
+  --lime:#84cc16;--lime2:#65a30d;
+  /* Superfici — bianco puro con graduazioni sottilissime */
+  --body:#f8f9fc;--surf:#ffffff;--surf2:#f9fafb;--surf3:#f3f4f6;--surf4:#e5e7eb;
+  /* Bordi ultra-sottili */
+  --border:rgba(17,24,39,0.06);--border2:rgba(17,24,39,0.11);
+  /* Testi */
+  --text:#111827;--text2:#374151;--text3:#9ca3af;
+  /* Sidebar — dark profondo quasi nero */
+  --sb:#0d0f14;
+  /* Ombre raffinate */
+  --sh:0 1px 3px rgba(0,0,0,0.04),0 1px 2px rgba(0,0,0,0.03);
+  --sh-md:0 4px 16px rgba(0,0,0,0.06);
+  --sh-lg:0 12px 32px rgba(0,0,0,0.09);
+  --row-tot26-bg:#f1f3f6;
+}
+html{color-scheme:light;}
+body{font-family:'Montserrat',sans-serif;background:var(--body);color:var(--text);min-height:100vh;display:flex;font-size:15px;line-height:1.5;}
+*{transition:background-color .15s,border-color .15s,box-shadow .15s;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surf4);border-radius:10px;}
+
+/* SIDEBAR */
+#sb{width:var(--sw);background:linear-gradient(180deg,#0d0f14 0%,#111318 100%);min-height:100vh;position:fixed;left:0;top:0;bottom:0;display:flex;flex-direction:column;z-index:200;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.04);}
+.sb-logo{height:var(--th);display:flex;align-items:center;gap:11px;padding:0 18px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0;}
+.sb-mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#818cf8,#6366f1);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:#fff;flex-shrink:0;}
+.sb-brand{color:#f9fafb;font-weight:700;font-size:15px;letter-spacing:.2px;}
+.sb-ver{color:rgba(255,255,255,0.25);font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.sb-nav{flex:1;padding:8px 0 10px;}
+.sb-sec{color:rgba(255,255,255,0.28);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;padding:16px 18px 5px;display:flex;align-items:center;gap:8px;}
+.sb-sec::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05);}
+.ni{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:1px 8px;border-radius:var(--r2);color:rgba(255,255,255,0.48);cursor:pointer;font-size:14px;font-weight:600;transition:all .14s;user-select:none;position:relative;}
+.ni svg{width:15px;height:15px;flex-shrink:0;opacity:.7;}
+.ni:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,.78);}
+.ni.active{background:rgba(99,102,241,0.15);color:#a5b4fc;font-weight:700;}
+.ni.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:18px;background:#818cf8;border-radius:2px;}
+.ni-sub{padding-left:36px !important;font-size:14px;color:rgba(255,255,255,0.35);}
+.ni-sub:hover{color:rgba(255,255,255,.7);}
+.ni-sub.active{color:#c7d2fe;background:rgba(99,102,241,0.1);}
+.ni-badge{background:#dc2626;color:#fff;font-size:11px;font-weight:800;border-radius:10px;padding:2px 6px;margin-left:auto;}
+.sb-foot{padding:12px 14px;border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.sb-foot-row{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,.3);margin-bottom:4px;}
+.sb-foot-val{color:rgba(255,255,255,.55);font-weight:700;}
+
+/* MAIN */
+#main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;overflow-x:hidden;min-width:0;}
+#topbar{height:var(--th);background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;position:sticky;top:0;z-index:100;}
+.tb-bc strong{color:var(--text);font-weight:700;font-size:14px;}
+.tb-chip{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;border:1.5px solid;cursor:pointer;transition:all .15s;}
+.chip-date{border-color:var(--border);color:var(--text3);background:transparent;cursor:default;font-weight:600;}
+.chip-warn{border-color:rgba(239,68,68,0.25);color:var(--red);background:rgba(239,68,68,0.06);}
+.chip-warn:hover{background:rgba(220,38,38,0.15);}
+#content{padding:18px 20px;flex:1;max-width:100%;box-sizing:border-box;}
+.view{display:none;animation:fi .2s ease;}.view.active{display:block;}
+@keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* BUTTONS */
+.btn{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;padding:8px 16px;border-radius:var(--r2);border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;}
+.btn-blue{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(99,102,241,0.22);letter-spacing:.01em;}
+.btn-blue:hover{background:var(--accent2);transform:translateY(-1px);box-shadow:0 4px 14px rgba(99,102,241,0.28);}
+.btn-red{background:#fee2e2;color:#dc2626;border:1.5px solid rgba(220,38,38,0.25);}
+.btn-red:hover{background:#fecaca;}
+.btn-outline{background:#fff;border:1.5px solid var(--border2);color:var(--text2);}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue);}
+.btn-ghost{background:transparent;color:var(--text3);}
+.btn-ghost:hover{background:var(--surf3);color:var(--text2);}
+.btn-sm{padding:5px 12px;font-size:14px;}
+.btn-xs{padding:4px 10px;font-size:13px;}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:14px;flex-wrap:wrap;}
+.ph-title{font-size:23px;font-weight:700;color:var(--text);letter-spacing:-.3px;display:flex;align-items:center;gap:10px;}
+.ph-sub{color:var(--text3);font-size:14px;margin-top:3px;font-weight:500;}
+
+/* PANELS */
+.panel{background:#fff;border:1px solid var(--border);border-radius:var(--r);margin-bottom:20px;overflow:hidden;box-shadow:var(--sh);transition:box-shadow .2s;}
+.panel-hd{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surf2);}
+.panel-title{font-weight:600;font-size:15px;color:var(--text2);flex:1;display:flex;align-items:center;gap:7px;letter-spacing:.01em;}
+.panel-body{padding:18px;}
+
+/* STAT CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:13px;margin-bottom:20px;}
+.sc{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:box-shadow .25s,transform .25s;}
+.sc:hover{box-shadow:var(--sh-md);transform:translateY(-2px);}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0;background:linear-gradient(90deg,var(--accent),#818cf8);}
+.sc-label{color:var(--text3);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.9px;margin-bottom:6px;}
+.sc-val{font-size:25px;font-weight:800;color:var(--text);letter-spacing:-1px;line-height:1;}
+.sc-sub{color:var(--text3);font-size:13px;margin-top:5px;font-weight:500;}
+.sc-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:8px;}
+.b-ok{background:rgba(132,204,22,0.10);color:#3f6b0e;}
+.b-warn{background:rgba(239,68,68,0.09);color:#dc2626;}
+.b-amber{background:rgba(245,158,11,0.09);color:#b45309;}
+.b-neu{background:var(--surf3);color:var(--text3);}
+
+/* TOP/FLOP TABLE in cruscotto */
+.topflop-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+.topflop-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);}
+.topflop-hd{padding:11px 16px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:7px;}
+.topflop-hd.top{background:rgba(132,204,22,0.06);color:#3a5f0e;border-bottom:1px solid rgba(132,204,22,0.15);letter-spacing:.02em;}
+.topflop-hd.flop{background:rgba(239,68,68,0.04);color:#991b1b;border-bottom:1px solid rgba(239,68,68,0.14);letter-spacing:.02em;}
+.topflop-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:14px;}
+.topflop-row:last-child{border-bottom:none;}
+.topflop-dept{font-weight:700;color:var(--text);}
+.topflop-kpi{font-size:12px;color:var(--text3);font-weight:600;}
+.topflop-val{font-weight:800;}
+.topflop-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;}
+
+/* GRAFICI */
+.charts-4{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.chart-box{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px;box-shadow:var(--sh);transition:box-shadow .2s;}
+.chart-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.chart-sub{font-size:13px;color:var(--text3);margin-bottom:10px;font-weight:500;}
+.chart-leg{display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
+.cl{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--text2);}
+.cl-line{width:18px;height:2.5px;border-radius:4px;}
+
+/* ── RIEPILOGO COLONNE — subgrid per allineamento ── */
+.riepilogo-cols{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  grid-template-rows:auto auto;
+  border-top:1px solid var(--border);
+}
+.riepilogo-col{
+  display:contents;
+}
+/* Layout flex per compatibilità massima */
+.riepilogo-cols-inner{
+  display:grid;
+  /* 5 colonne uguali */
+  grid-template-columns:1fr 1fr 1fr;
+  /* 5 righe con altezze FISSE per allineamento righe nere */
+  grid-template-rows:auto auto;
+  border-top:1px solid var(--border);
+}
+.riepilogo-col-box{
+  /* Ogni colonna occupa tutte le 5 righe del grid */
+  grid-row:1/-1;
+  display:grid;
+  grid-template-rows:subgrid; /* eredita le righe del parent */
+  border-right:1px solid var(--border);
+  background:#fff;
+  min-width:200px;
+}
+/* Fallback per browser senza subgrid (Chrome <117, Firefox <71) */
+@supports not (grid-template-rows:subgrid){
+  .riepilogo-cols-inner{
+    display:flex;
+    align-items:stretch;
+  }
+  .riepilogo-col-box{
+    display:flex;flex-direction:column;flex:1;
+  }
+}
+.riepilogo-col-box:last-child{border-right:none;grid-column:5;}
+
+.rc-head{padding:7px 12px;background:var(--surf2);border-bottom:1px solid var(--border);text-align:center;height:auto;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.rc-icon{font-size:20px;margin-bottom:3px;}
+.rc-title{font-size:12px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.5px;line-height:1.3;}
+.rc-tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-block;margin-top:4px;}
+.rc-tag.lower{background:rgba(132,204,22,0.15);color:#4d7c0f;}
+.rc-tag.lower-segn{background:rgba(220,38,38,0.12);color:#dc2626;}
+
+/* Input sezione — altezza fissa uniforme */
+.rc-inputs{
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  display:flex;flex-direction:column;gap:6px;
+  flex-shrink:0;
+}
+.rc-inp-row{display:flex;align-items:center;gap:5px;height:28px;flex-shrink:0;}
+.rc-inp-lbl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;width:24px;flex-shrink:0;}
+.rc-inp-euro{display:flex;align-items:center;flex:1;border:1.5px solid var(--border2);border-radius:5px;background:var(--surf2);transition:all .15s;overflow:hidden;height:26px;}
+/* Input named: stile identico a rc-inp-euro, usato nella colonna Registra Segnalazione */
+.rc-inp-named{display:flex;align-items:center;width:100%;border:1.5px solid var(--border2);border-radius:5px;background:var(--surf2);transition:all .15s;overflow:hidden;height:30px;justify-content:space-between;padding:0 6px 0 8px;gap:4px;}
+.rc-inp-named:hover{border-color:var(--blue);background:#fff;}
+.rc-inp-named:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.09);background:#fff;}
+.rc-inp-named-lbl{font-size:11px;font-weight:700;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.rc-inp-named input{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;border:none;background:transparent;color:var(--text);width:52px;text-align:center;outline:none;flex-shrink:0;}
+.rc-inp-named-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;line-height:1;padding:1px 2px;border-radius:3px;transition:all .12s;flex-shrink:0;}
+.rc-inp-named-del:hover{color:var(--red);}
+.rc-inp-euro:hover{border-color:var(--blue);background:#fff;}
+.rc-inp-euro:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.09);background:#fff;}
+.rc-inp-euro-sym{font-size:12px;font-weight:600;color:var(--text3);padding:0 4px 0 7px;flex-shrink:0;}
+.rc-inp-euro input{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;border:none;background:transparent;color:var(--text);width:100%;text-align:center;outline:none;padding:0 6px 0 0;}
+.rc-inp-row input.rc-plain{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;border:1.5px solid var(--border2);border-radius:5px;padding:3px 6px;background:var(--surf2);color:var(--text);outline:none;transition:all .15s;width:100%;text-align:center;height:26px;}
+.rc-inp-row input.rc-plain:hover{border-color:var(--blue);background:#fff;}
+.rc-inp-row input.rc-plain:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.09);background:#fff;}
+/* Forn-row con delete btn */
+.rc-forn-row{display:flex;align-items:center;gap:5px;height:28px;flex-shrink:0;flex-wrap:nowrap;overflow:hidden;justify-content:space-between;}
+.rc-forn-lbl{font-size:11px;font-weight:700;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:1;cursor:help;min-width:0;}
+.rc-forn-del{background:none;border:1px solid var(--border2);cursor:pointer;color:var(--text3);font-size:13px;line-height:1;padding:2px 4px;border-radius:4px;transition:all .12s;flex-shrink:0;min-width:22px;height:26px;display:flex;align-items:center;justify-content:center;}
+.rc-forn-del:hover{color:var(--red);background:rgba(220,38,38,0.08);border-color:rgba(220,38,38,0.3);}
+.rc-add-btn{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;padding:4px 8px;border-radius:5px;border:1.5px solid var(--border2);background:var(--surf3);color:var(--text2);cursor:pointer;transition:all .15s;width:100%;margin-top:4px;flex-shrink:0;}
+.rc-add-btn:hover{border-color:var(--blue);color:var(--blue);background:#fff;}
+
+/* Totali — altezza fissa */
+.rc-totals{padding:6px 12px;display:flex;flex-direction:column;gap:4px;border-bottom:1px solid var(--border);background:var(--surf2);height:auto;flex-shrink:0;justify-content:center;}
+.rc-tot-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;min-height:19px;}
+.rc-tot-lbl{font-weight:600;color:var(--text3);font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+.rc-tot-val{font-weight:700;font-size:13px;text-align:right;}
+.rc-status{padding:7px 14px;text-align:center;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;height:auto;flex-shrink:0;}
+
+/* GAUGE MODERNO — più leggibile, arco più ampio */
+.rc-gauge{padding:10px 4px 18px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;width:100%;flex:1;}
+.gauge-value-lbl{font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1.1;margin-top:0;text-align:center;}
+.gauge-value-sub{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;text-align:center;}
+.gauge-ytd{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--text3);margin-top:8px;font-weight:700;text-align:center;line-height:1.4;background:var(--surf2);border-radius:6px;padding:6px 10px;width:100%;}
+.gauge-ytd strong{font-size:13px;}
+.prog-bar{width:88%;height:7px;background:var(--surf4);border-radius:7px;overflow:hidden;margin-top:10px;box-shadow:inset 0 1px 2px rgba(0,0,0,0.06);}
+.prog-fill{height:100%;border-radius:7px;transition:width .7s cubic-bezier(.34,1.56,.64,1);}
+.warn-box{border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.5;margin-top:4px;border:1px solid;width:100%;box-sizing:border-box;}
+.warn-box.ok{background:rgba(132,204,22,0.06);border-color:rgba(132,204,22,0.2);color:#3d6b10;}
+.warn-box.amber{background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.2);color:#92400e;}
+.warn-box.warn{background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.18);color:#991b1b;}
+.warn-box-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;opacity:.75;}
+
+/* NOTIFICHE VENERDÌ */
+#friday-notif{display:none;margin-bottom:18px;}
+
+/* ALERT INLINE sotto le sezioni */
+.inline-alert{display:none;border-radius:var(--r2);padding:10px 14px;margin-top:-10px;margin-bottom:18px;border:1px solid;font-size:13px;font-weight:600;line-height:1.5;animation:fi .25s ease;}
+.inline-alert.crit{background:rgba(220,38,38,0.05);border-color:rgba(220,38,38,0.25);color:#991b1b;}
+.inline-alert.att{background:rgba(217,119,6,0.05);border-color:rgba(217,119,6,0.22);color:#92400e;}
+.inline-alert.ok{background:rgba(132,204,22,0.07);border-color:rgba(132,204,22,0.28);color:#3f6212;}
+.inline-alert-hd{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.inline-alert-azione{margin-top:7px;padding-top:7px;border-top:1px solid rgba(0,0,0,0.06);font-size:12px;color:inherit;opacity:.85;}
+.notif-bar{background:#fffbeb;border:1px solid rgba(245,158,11,0.3);border-radius:var(--r);padding:12px 18px;display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:#92400e;box-shadow:0 1px 4px rgba(245,158,11,0.1);}
+.notif-bar svg{flex-shrink:0;width:18px;height:18px;}
+.notif-close{background:none;border:none;cursor:pointer;color:#856404;font-size:20px;margin-left:auto;line-height:1;padding:0 4px;}
+
+/* TABELLE KPI */
+.kpi-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.kpi-tbl{width:100%;border-collapse:collapse;font-size:14px;}
+.kpi-tbl th{background:var(--surf2);color:var(--text3);font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700;padding:10px 10px;text-align:center;border-bottom:1px solid var(--border2);border-right:1px solid var(--border);white-space:nowrap;font-family:'Montserrat',sans-serif;}
+.kpi-tbl th.th-row{text-align:left;position:sticky;left:0;background:var(--surf2);z-index:2;min-width:140px;}
+.kpi-tbl td{padding:4px 6px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);text-align:center;font-weight:600;color:var(--text2);vertical-align:middle;white-space:nowrap;}
+.kpi-tbl td .cell-wrap{display:inline-flex;align-items:center;justify-content:center;gap:3px;width:100%;}
+.kpi-tbl td .cell-eur{font-size:12px;font-weight:700;color:var(--text3);flex-shrink:0;}
+.kpi-tbl td .cell-eur-tgt{font-size:12px;font-weight:700;color:var(--text);flex-shrink:0;}
+.kpi-tbl td.td-row{text-align:left;position:sticky;left:0;background:#fff;z-index:1;font-weight:700;color:var(--text);white-space:nowrap;}
+.kpi-tbl tr:last-child td{border-bottom:none;}
+.r-sett td{color:var(--text2);font-size:13px;font-weight:600;}.r-sett td.td-row{color:var(--text3);font-weight:600;font-size:13px;}
+.r-tot26 td{background:var(--row-tot26-bg) !important;font-weight:800;}
+.r-tot26 td.td-row{background:var(--row-tot26-bg) !important;color:var(--text2) !important;}
+.r-tot26 td.c-ok{color:var(--lime2) !important;}
+.r-tot26 td.c-warn{color:var(--red) !important;}
+.r-tot26 td.c-amber{color:var(--amber) !important;}
+.r-tot26 td.c-neu{color:var(--text3) !important;}
+.r-tot25 td.td-row{color:var(--text3) !important;font-weight:700;font-size:13px;}.r-tot25 td{color:var(--text3);font-size:13px;}
+.r-target{border-top:1.5px solid var(--border2);}
+.r-target td{color:var(--text) !important;font-weight:700 !important;font-style:normal !important;font-size:13px;}
+.r-target td.td-row{color:var(--text) !important;font-weight:700 !important;font-style:normal !important;}
+.kpi-tbl input[type=number]{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;border:1px solid transparent;border-radius:4px;padding:3px 5px;background:transparent;color:var(--text2);width:96px;text-align:center;outline:none;transition:all .15s;}
+.kpi-tbl input[type=number]:hover{border-color:var(--border2);background:var(--surf3);}
+.kpi-tbl input[type=number]:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,0.09);}
+.col-sep{border-left:2px solid var(--border2) !important;}
+
+/* FORNITORI rank */
+.forn-rank-1{color:#dc2626 !important;font-weight:800 !important;}
+.forn-rank-2{color:#d97706 !important;font-weight:700 !important;}
+.forn-rank-3{color:#f59e0b !important;font-weight:700 !important;}
+.forn-rank-ok{color:var(--lime2) !important;font-weight:700 !important;}
+
+/* DIVIDER */
+.sec-div{display:flex;align-items:center;gap:12px;margin:34px 0 18px;}
+.sec-div h3{font-size:16px;font-weight:700;color:var(--text2);white-space:nowrap;display:flex;align-items:center;gap:8px;letter-spacing:.02em;}
+.sec-div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* FIELD */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;}
+.field input,.field select{font-family:'Montserrat',sans-serif;font-size:15px;padding:8px 11px;border:1px solid var(--border2);border-radius:var(--r2);background:var(--surf3);color:var(--text);outline:none;transition:all .18s;font-weight:500;}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.10);background:#fff;}
+
+/* BUDGET editable inline */
+.budget-input-wrap{display:flex;align-items:center;gap:6px;background:var(--surf3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:4px 10px;}
+.budget-input-wrap span{font-size:13px;font-weight:700;color:var(--text3);}
+.budget-inp{font-family:'Montserrat',sans-serif;font-size:16px;font-weight:700;border:none;background:transparent;outline:none;width:110px;text-align:right;color:var(--text);}
+.budget-inp:focus{color:var(--blue);}
+
+/* WARNINGS PANEL */
+#wp{display:none;position:fixed;top:var(--th);right:0;width:370px;height:calc(100vh - var(--th));background:#fff;border-left:1px solid var(--border);box-shadow:var(--sh-lg);z-index:300;flex-direction:column;}
+#wp.open{display:flex;}
+.wp-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surf2);}
+.wp-title{font-weight:800;font-size:15px;flex:1;}
+.wp-x{background:none;border:none;cursor:pointer;color:var(--text3);font-size:24px;line-height:1;padding:2px 6px;border-radius:5px;}
+.wp-x:hover{background:var(--surf3);}
+.wp-body{flex:1;overflow-y:auto;padding:14px;}
+.wc{border-radius:var(--r2);padding:13px 14px;margin-bottom:10px;border:1px solid;}
+.wc.crit{background:rgba(220,38,38,0.04);border-color:rgba(220,38,38,0.22);}
+.wc.att{background:rgba(217,119,6,0.04);border-color:rgba(217,119,6,0.2);}
+.wc-hd{font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.wc-msg{font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:8px;}
+.wc-action{background:var(--surf3);border-radius:5px;padding:9px 11px;font-size:12px;color:var(--text2);line-height:1.5;border-left:3px solid;}
+.wc-action.crit{border-color:var(--red);}.wc-action.att{border-color:var(--amber);}
+.wc-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:4px;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.15);z-index:299;}
+.overlay.open{display:block;}
+
+/* FILTRO PERIODO */
+.fil-btn{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;padding:4px 9px;border:none;border-radius:5px;cursor:pointer;background:transparent;color:var(--text3);transition:all .14s;}
+.fil-btn:hover{background:var(--surf4);color:var(--text2);}
+.fil-btn.fil-active{background:#fff;color:var(--accent);box-shadow:var(--sh);font-weight:700;}
+/* Asse editabile */
+.axis-ctrl{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--text3);}
+.axis-inp{font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;padding:2px 6px;border:1.5px solid var(--border2);border-radius:4px;background:var(--surf3);color:var(--text);outline:none;width:72px;text-align:right;transition:all .14s;}
+.axis-inp:focus{border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.08);}
+
+/* Filtro per singolo grafico */
+.chart-fil-bar{display:flex;gap:3px;margin-bottom:10px;flex-wrap:wrap;}
+.cfb{font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;padding:3px 8px;border:1.5px solid var(--border2);border-radius:5px;cursor:pointer;background:var(--surf3);color:var(--text3);transition:all .13s;}
+.cfb:hover{background:var(--surf4);}
+.cfb.on-25{background:rgba(107,114,128,0.12);color:#374151;border-color:rgba(107,114,128,0.3);}
+.cfb.on-26{background:rgba(17,17,17,0.08);color:#111;border-color:rgba(17,17,17,0.25);}
+.cfb.on-tgt{background:rgba(132,204,22,0.12);color:#3f6212;border-color:rgba(132,204,22,0.35);}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+@media(max-width:1300px){.charts-4,.topflop-grid{grid-template-columns:1fr;}}
+@media(max-width:900px){.g2{grid-template-columns:1fr;}}
+
+/* ─── UNIFORMITÀ CARATTERI TABELLE KPI ─── */
+.kpi-tbl tr td,
+.kpi-tbl tr td input[type=number],
+.kpi-tbl tr td input[type=text],
+.kpi-tbl tr td .cell-eur,
+.kpi-tbl tr td .cell-eur-tgt,
+.kpi-tbl tr td .cell-wrap {
+  font-size:12px !important;
+  line-height:1.4;
+}
+.kpi-tbl tr {
+  height:38px;
+}
+
+/* ─── ALLINEAMENTO UNIVERSALE CENTRATO ─── */
+.kpi-tbl tr td {
+  text-align:center !important;
+  vertical-align:middle !important;
+}
+.kpi-tbl tr td.td-row {
+  text-align:left !important;
+  vertical-align:middle !important;
+}
+.kpi-tbl tr td input[type=number],
+.kpi-tbl tr td input[type=text] {
+  display:block;
+  margin:0 auto;
+  vertical-align:middle;
+  text-align:center !important;
+}
+.kpi-tbl td .cell-wrap {
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:100%;
+  height:100%;
+}
+/* Righe input nel riepilogo */
+.rc-inp-row {
+  display:flex;
+  align-items:center !important;
+  justify-content:center;
+}
+.rc-tot-row {
+  display:flex;
+  align-items:center !important;
+}
+/* Tutte le celle flex centrate */
+.rc-gauge,
+.rc-head,
+.rc-inputs,
+.rc-totals,
+.rc-consiglio {
+  display:flex;
+  align-items:center;
+}
+.rc-gauge { flex-direction:column; justify-content:center; }
+.rc-head  { flex-direction:column; justify-content:center; text-align:center; }
+.rc-inputs { flex-direction:column; justify-content:flex-start; align-items:stretch; }
+.rc-totals { flex-direction:column; justify-content:center; align-items:stretch; }
+
+/* ─── RIEPILOGO ARMONIOSO ─── */
+/* Alert bar sotto la tabella dati */
+.alert-bar{
+  display:grid;
+  gap:0;
+  border-top:2px solid var(--border2);
+  background:var(--surf2);
+}
+.alert-bar-cell{
+  padding:12px 14px;
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:center;
+  text-align:center;
+}
+.alert-bar-cell:last-child{border-right:none;}
+.alert-kpi-lbl{
+  font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.7px;
+  display:flex;align-items:center;gap:5px;
+  justify-content:center;
+}
+.alert-kpi-val{
+  font-size:22px;font-weight:800;letter-spacing:-1px;line-height:1;
+  text-align:center;
+}
+.alert-kpi-meta{
+  font-size:11px;color:var(--text3);display:flex;flex-direction:column;gap:3px;margin-top:3px;
+  align-items:center;
+}
+.alert-kpi-meta span{display:flex;justify-content:space-between;gap:8px;}
+
+
+/* ─── TABELLA SEGNALAZIONI FORNITORI ─── */
+.segn-tbl{width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:11px;}
+.segn-tbl th{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;padding:8px 8px;border-bottom:1.5px solid var(--border2);white-space:nowrap;background:var(--surf2);}
+.segn-tbl td{padding:6px 5px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.segn-tbl tr:hover td{background:rgba(99,102,241,0.03);}
+.segn-tbl td.forn-lbl{font-weight:700;color:var(--text);white-space:nowrap;padding:6px 12px;min-width:120px;font-size:11px;}
+.segn-tbl td.tot-cell{font-weight:800;font-size:12px;padding:6px 12px;text-align:right;background:var(--surf2);border-left:2px solid var(--border2);}
+.segn-tbl td.tot-row{background:var(--surf3) !important;font-weight:800;font-size:12px;padding:8px 12px;}
+.segn-cell-wrap{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:52px;}
+.segn-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:transform .15s;}
+.segn-cell-wrap:hover .segn-dot{transform:scale(1.4);}
+.segn-inp{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;border:1px solid transparent;border-radius:3px;padding:2px 3px;background:transparent;width:54px;text-align:center;outline:none;transition:all .15s;color:var(--text2);}
+.segn-inp:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px rgba(99,102,241,0.1);}
+.segn-inp.has-val{color:var(--accent);font-weight:700;}
+
+
+/* ─── PULSANTE SALVA PER SEZIONE ─── */
+.sec-save-btn{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;
+  padding:7px 20px;border-radius:6px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#818cf8,#6366f1);color:#fff;
+  box-shadow:0 2px 6px rgba(99,102,241,0.3);transition:all .15s;
+  height:34px;
+}
+.sec-save-btn:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(99,102,241,0.35);}
+.sec-save-btn:active{transform:translateY(0);}
+.sec-save-ok{color:#22c55e;font-size:10px;font-weight:700;opacity:0;transition:opacity .3s;}
+.sec-save-ok.show{opacity:1;}
+
+/* ─── LARGHEZZA MINIMA CELLE € PER DECIMALI COMPLETI ─── */
+.kpi-tbl .cell-wrap {
+  min-width: 96px;
+}
+.kpi-tbl .cell-wrap input[type=text],
+.kpi-tbl .cell-wrap input[type=number] {
+  min-width: 80px !important;
+  width: 80px !important;
+}
+
+/* ─── RESPONSIVE LAYOUT GLOBALE ─── */
+*, *::before, *::after { box-sizing: border-box; }
+#main { overflow-x: hidden !important; min-width: 0; }
+#content { overflow-x: hidden; }
+.view { max-width: 100%; overflow-x: hidden; }
+.panel { max-width: 100%; }
+.panel-body { max-width: 100%; }
+.charts-4 { max-width: 100%; }
+.chart-box { min-width: 0; overflow: hidden; }
+.kpi-tbl-wrap { overflow-x: auto; max-width: 100%; }
+.riepilogo-cols-inner { max-width: 100%; }
+.sec-div h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Tabelle KPI: font scala con la larghezza */
+.kpi-tbl { font-size: 11px; }
+.kpi-tbl th { font-size: 8.5px; padding: 8px 6px; }
+.kpi-tbl td { padding: 3px 4px; font-size: 11px; }
+.kpi-tbl td.td-row { min-width: 100px; max-width: 140px; }
+
+/* Grafici: garantisci 100% larghezza */
+.charts-4 canvas, .chart-box canvas { max-width: 100% !important; }
+
+/* Media query per schermi stretti */
+@media (max-width: 1200px) {
+  :root { --sw: 200px; }
+  #content { padding: 14px 16px; }
+  .kpi-tbl th { font-size: 8px; padding: 7px 4px; }
+  .kpi-tbl td { font-size: 10px; padding: 3px 3px; }
+}
+@media (max-width: 900px) {
+  :root { --sw: 0px; }
+  #sb { display: none; }
+  #content { padding: 12px; }
+}
+
+/* ─── SPAZIATURA SEZIONI KPI ─── */
+#sec-ordini-num, #sec-ordini-val, #sec-segn-forn,
+#sec-grafici, #sec-budget {
+  padding-top: 6px;
+}
+#sec-ordini-num .panel,
+#sec-ordini-val .panel,
+#sec-segn-forn .panel,
+#sec-grafici .panel,
+#sec-budget .panel {
+  margin-bottom: 24px;
+}
+
+/* ─── PADDING DX/SX +0.5cm DA ORDINI IN GIÙ ─── */
+#sec-grafici,
+#sec-budget {
+  padding-left: 19px;
+  padding-right: 19px;
+}
+
+/* ─── ALLINEAMENTO BORDI TABELLE ─── */
+/* ─── ALLINEAMENTO BORDI TABELLE ─── */
+#sec-ordini-num .kpi-tbl-wrap,
+#sec-ordini-val .kpi-tbl-wrap {
+  padding-left: 0;
+  padding-right: 0;
+}
+#sec-segn-forn .kpi-tbl-wrap {
+  padding-left: 0;
+  padding-right: 0;
+}
+/* ─── PRIMA E ULTIMA COLONNA KPI TABLE ADATTATE ─── */
+#sec-ordini-num .kpi-tbl td.td-row,
+#sec-ordini-num .kpi-tbl th.th-row,
+#sec-ordini-val .kpi-tbl td.td-row,
+#sec-ordini-val .kpi-tbl th.th-row,
+#sec-segn-forn .kpi-tbl td.td-row,
+#sec-segn-forn .kpi-tbl th.th-row {
+  min-width: 90px;
+  max-width: 130px;
+  width: 110px;
+}
+/* Ultima colonna — stessa larghezza delle altre */
+#sec-ordini-num .kpi-tbl th:last-child,
+#sec-ordini-num .kpi-tbl td:last-child,
+#sec-ordini-val .kpi-tbl th:last-child,
+#sec-ordini-val .kpi-tbl td:last-child,
+#sec-segn-forn .kpi-tbl th:last-child,
+#sec-segn-forn .kpi-tbl td:last-child {
+  min-width: 0;
+  width: auto;
+}
+/* Tutte le colonne mese uguali */
+#sec-ordini-num .kpi-tbl th:not(.th-row),
+#sec-ordini-num .kpi-tbl td:not(.td-row),
+#sec-ordini-val .kpi-tbl th:not(.th-row),
+#sec-ordini-val .kpi-tbl td:not(.td-row),
+#sec-segn-forn .kpi-tbl th:not(.th-row),
+#sec-segn-forn .kpi-tbl td:not(.td-row) {
+  width: auto;
+  min-width: 0;
+}
+
+
+
+}
+/* Campi form: grigio chiaro come S1-S5 */
+
+/* Campi form col3: grigio chiaro */
+
+/* ─── CELL-WRAP ORDINI VAL = ORDINI NUM ─── */
+#sec-ordini-val .kpi-tbl .cell-wrap {
+  min-width: 0 !important;
+}
+#sec-ordini-val .kpi-tbl .cell-wrap input[type=text] {
+  min-width: 0 !important;
+  width: 96px !important;
+}
+
+</style>
+</head>
+<body>
+
+<nav id="sb">
+  <div class="sb-logo">
+    <div class="sb-mark">K</div>
+    <div><div class="sb-brand">KPI Monitor</div><div class="sb-ver">Hub Reparti 2026</div></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">KPI Acquisti</div>
+    <div class="ni" data-v="acquisti" onclick="nav('acquisti',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>KPI Acquisti
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div class="sb-foot-row"><span>Ultimo salvataggio</span><span class="sb-foot-val" id="lastSave">—</span></div>
+    <div class="sb-foot-row"><span>Alert attivi</span><span class="sb-foot-val" id="sb-warn-n" style="color:#fca5a5">0</span></div>
+  </div>
+</nav>
+
+<div class="overlay" id="overlay" onclick="closeWP()"></div>
+<div id="wp">
+  <div class="wp-hd">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span class="wp-title">Alert & Azioni Correttive</span>
+    <button class="wp-x" onclick="closeWP()">×</button>
+  </div>
+  <div class="wp-body" id="wp-list"></div>
+</div>
+
+<div id="main">
+  <div id="topbar">
+    <div class="tb-bc"><strong id="bcrumb">KPI Acquisti</strong></div>
+    <div style="flex:1"></div>
+    <div class="tb-chip chip-date" id="today-chip"></div>
+    <!-- FILTRO PERIODO -->
+    <div style="display:flex;align-items:center;gap:6px;background:var(--surf3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:3px 3px 3px 10px;">
+      <span style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap">Filtro:</span>
+      <div style="display:flex;gap:2px;">
+        <button id="fil-sett" class="fil-btn" onclick="setFiltro('settimana',this)">Sett.</button>
+        <button id="fil-mese" class="fil-btn fil-active" onclick="setFiltro('mese',this)">Mese</button>
+        <button id="fil-anno" class="fil-btn" onclick="setFiltro('anno',this)">Anno</button>
+      </div>
+      <select id="fil-sel" onchange="onFiltroSel()" style="font-family:'Montserrat',sans-serif;font-size:11px;padding:4px 7px;border:none;background:transparent;color:var(--text);outline:none;font-weight:700;"></select>
+    </div>
+    <div class="tb-chip chip-warn" id="warn-chip" onclick="openWP()" style="display:none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      <span id="warn-chip-n">0</span> Alert
+    </div>
+    
+  </div>
+
+  <div id="content">
+
+  <!-- ═══ CRUSCOTTO GENERALE ═══ -->
+
+  <!-- ═══ KPI ACQUISTI ═══ -->
+  <div class="view active" id="view-acquisti">
+    <!-- Notifica venerdì -->
+    <div id="friday-notif">
+      <div class="notif-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span>📅 <strong>Oggi è venerdì</strong> — Ricorda di compilare i dati settimanali nel Riepilogo &amp; Inserimento Rapido per tutti i KPI Acquisti prima della chiusura.</span>
+        <button class="notif-close" onclick="document.getElementById('friday-notif').style.display='none'">×</button>
+      </div>
+    </div>
+
+    <div class="ph">
+      <div>
+        <div class="ph-title"><span style="background:rgba(37,99,235,0.1);border:1px solid rgba(37,99,235,0.2);border-radius:8px;padding:5px 10px;">🛒</span>KPI Acquisti</div>
+        
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        
+        
+      </div>
+    </div>
+
+    <!-- RIEPILOGO A COLONNE -->
+    <div id="sec-riepilogo" style="scroll-margin-top:70px">
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">📊 Riepilogo & Inserimento Rapido</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <label style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap">Mese:</label>
+          <select id="riepilogo-mese" onchange="buildRiepilogoColumns()" style="font-family:'Montserrat',sans-serif;font-size:11px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:var(--r2);background:var(--surf2);color:var(--text);outline:none;font-weight:700;">
+            <option value="0">Gennaio</option><option value="1">Febbraio</option><option value="2">Marzo</option><option value="3">Aprile</option><option value="4">Maggio</option><option value="5">Giugno</option><option value="6">Luglio</option><option value="7">Agosto</option><option value="8">Settembre</option><option value="9">Ottobre</option><option value="10">Novembre</option><option value="11">Dicembre</option>
+          </select>
+        
+        <div style="display:flex;align-items:center;gap:8px"><span class="sec-save-ok" id="save-ok-riepilogo">✓ Salvato</span><button class="sec-save-btn" onclick="saveSection('riepilogo')">💾 Salva</button></div></div>
+      </div>
+      <div class="panel-body" style="padding:0;overflow-x:auto;">
+        <div class="riepilogo-cols-inner" id="riepilogo-cols"></div>
+        <!-- Alert e Consigli separati dalla tabella -->
+        <div id="riepilogo-alerts-bar" style="display:none"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- GRAFICI -->
+    <div id="sec-grafici" style="scroll-margin-top:70px">
+    
+    <div class="charts-4">
+      <div class="chart-box">
+        <div class="chart-title">📦 N° Ordini Fornitori Inseriti</div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+          <div class="chart-leg" style="margin-bottom:0"><div class="cl"><div class="cl-line" style="background:#6b7280"></div>2025</div><div class="cl"><div class="cl-line" style="background:#111"></div>2026</div><div class="cl"><div class="cl-line" style="background:#84cc16"></div>Target</div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="chart-fil-bar" style="margin-bottom:0">
+              <button id="cfb-ch-a1-s25" class="cfb on-25" onclick="toggleChartSerie('ch-a1','s25')">2025</button>
+              <button id="cfb-ch-a1-s26" class="cfb on-26" onclick="toggleChartSerie('ch-a1','s26')">2026</button>
+              <button id="cfb-ch-a1-stgt" class="cfb on-tgt" onclick="toggleChartSerie('ch-a1','stgt')">Target</button>
+            </div>
+            <div class="axis-ctrl">
+              Max:
+              <input class="axis-inp" id="ax-ch-a1" value="400"
+                onblur="setAxisMax('ch-a1',this.value,'ordiniNum')"
+                onkeydown="if(event.key==='Enter')setAxisMax('ch-a1',this.value,'ordiniNum')"
+                title="Modifica valore massimo asse Y">
+              &nbsp;<span class="sec-save-ok" id="save-ok-ch-a1">✓ Salvato</span>
+              <button class="sec-save-btn" onclick="saveSection('ch-a1')" style="margin-left:4px">💾 Salva</button>
+            </div>
+          </div>
+        </div>
+        <div style="height:280px"><canvas id="ch-a1"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">💶 Valore Ordini Fornitori (€)</div>
+        
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+          <div class="chart-leg" style="margin-bottom:0"><div class="cl"><div class="cl-line" style="background:#6b7280"></div>2025</div><div class="cl"><div class="cl-line" style="background:#111"></div>2026</div><div class="cl"><div class="cl-line" style="background:#84cc16"></div>Target</div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="chart-fil-bar" style="margin-bottom:0">
+              <button id="cfb-ch-a2-s25" class="cfb on-25" onclick="toggleChartSerie('ch-a2','s25')">2025</button>
+              <button id="cfb-ch-a2-s26" class="cfb on-26" onclick="toggleChartSerie('ch-a2','s26')">2026</button>
+              <button id="cfb-ch-a2-stgt" class="cfb on-tgt" onclick="toggleChartSerie('ch-a2','stgt')">Target</button>
+            </div>
+            <div class="axis-ctrl">
+              Max:
+              <input class="axis-inp" id="ax-ch-a2" value="300.000"
+                onblur="setAxisMax('ch-a2',this.value,'ordiniVal')"
+                onkeydown="if(event.key==='Enter')setAxisMax('ch-a2',this.value,'ordiniVal')"
+                title="Modifica valore massimo asse Y">
+              <span style="font-size:9px;color:var(--text3)">€</span>
+              &nbsp;<span class="sec-save-ok" id="save-ok-ch-a2">✓ Salvato</span>
+              <button class="sec-save-btn" onclick="saveSection('ch-a2')" style="margin-left:4px">💾 Salva</button>
+            </div>
+          </div>
+        </div>
+        <div style="height:280px"><canvas id="ch-a2"></canvas></div>
+      </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- BUDGET MENSILE -->
+    <div id="sec-budget" style="scroll-margin-top:70px">
+    
+    <div class="panel">
+      <div class="panel-hd">
+        <span class="panel-title">Budget Mensile</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Budget mensile:</span>
+          <div class="budget-input-wrap">
+            <span>€</span>
+            <input type="text" inputmode="decimal" class="budget-inp" id="budget-val"
+  value="150.000"
+  onfocus="const r=parseFmt(this.value);this.value=r!=null?r:'';"
+  onblur="const n=parseFmt(this.value);if(n!=null){BUDGET=n;this.value=fmtItNum(n);}buildBudgetChart();autoSave();"
+  onkeydown="if(event.key==='Enter')this.blur();">
+          
+        <div style="display:flex;align-items:center;gap:8px"><span class="sec-save-ok" id="save-ok-budget">✓ Salvato</span><button class="sec-save-btn" onclick="saveSection('budget')">💾 Salva</button></div></div></div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <!-- Legenda stile grafici standard -->
+        <div style="display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap">
+          <div class="cl"><div class="cl-line" style="background:#111"></div>Spesa 2026</div>
+          <div class="cl"><div class="cl-line" style="background:#84cc16;border-top:2px dashed #84cc16;height:0"></div>Budget mensile</div>
+        </div>
+        <div style="height:240px"><canvas id="ch-budget"></canvas></div>
+        <div id="budget-thermo-detail" style="margin-top:14px"></div>
+      </div>
+    </div>
+    </div>
+
+
+
+    <!-- N° ORDINI -->
+    <div id="sec-ordini-num" style="scroll-margin-top:70px">
+    <div class="panel"><div class="panel-hd"><span class="panel-title">📦 KPI N° Ordini Fornitori Inseriti</span><div style="display:flex;align-items:center;gap:8px"><span class="sec-save-ok" id="save-ok-ordiniNum">✓ Salvato</span><button class="sec-save-btn" onclick="saveSection('ordiniNum')">💾 Salva</button></div></div><div class="panel-body" style="padding:0 19px"><div class="kpi-tbl-wrap" id="tbl-ordiniNum"></div></div></div>
+    </div>
+
+    <!-- VALORE ORDINI -->
+    <div id="sec-ordini-val" style="scroll-margin-top:70px">
+    
+    <!-- TABELLA SEGNALAZIONI FORNITORI — stile kpi-tbl -->
+    <div id="sec-segn-forn" style="scroll-margin-top:70px">
+    
+    <div class="panel"><div class="panel-hd"><span class="panel-title">💶 KPI Valore Ordini Fornitori (€)</span><div style="display:flex;align-items:center;gap:8px"><span class="sec-save-ok" id="save-ok-ordiniVal">✓ Salvato</span><button class="sec-save-btn" onclick="saveSection('ordiniVal')">💾 Salva</button></div></div><div class="panel-body" style="padding:0 19px"><div class="kpi-tbl-wrap" id="tbl-ordiniVal"></div></div></div>
+    </div>
+
+    </div>
+
+    <div class="panel">
+    <div class="panel"><div class="panel-hd"><span class="panel-title">⚠️ Segnalazioni Fornitori</span><div style="display:flex;align-items:center;gap:8px"><span class="sec-save-ok" id="save-ok-segnForn">✓ Salvato</span><button class="sec-save-btn" onclick="saveSection('segnForn')">💾 Salva</button></div></div>
+      <div class="panel-body" style="padding:0 19px;overflow-x:auto">
+        <div class="kpi-tbl-wrap" id="tbl-segn-forn"></div>
+      </div>
+    </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATABASE
+// ═══════════════════════════════════════════════════════
+const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const MS=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const KS=['ordiniNum','ordiniVal'];
+let BUDGET=150000;
+
+function tgt5pct(v){return v!=null?Math.ceil(v*0.95):0;}
+
+const DB={acquisti:{kpis:{
+  ordiniNum:{id:'ordiniNum',label:'N° Ordini Inseriti',unit:'',icon:'📦',isLowerBetter:true,alertTag:'lower',alertDesc:'Obiettivo: –5% vs 2025',
+    settimane:[[12,25,24,27,null,null,null,null,null,null,null,null],[39,20,40,8,16,null,null,null,null,null,null,null],[52,47,37,23,32,null,null,null,null,null,null,null],[41,40,25,26,null,null,null,null,null,null,null,null],[null,null,15,20,null,null,null,null,null,null,null,null]],
+    tot2026:[144,132,141,104,48,0,0,0,0,0,0,0],
+    tot2025:[104,123,161,114,121,111,159,32,171,185,163,78],
+    get target(){return this.tot2025.map(v=>tgt5pct(v));},
+    azioni:{ok:'✓ Numero ordini contenuto entro il target. La razionalizzazione degli acquisti procede correttamente.',amber:'△ N° ordini vicino al limite. Valutare opportunità di aggregare ulteriormente gli ordini per fornitore.',warn:'⚠ N° ordini superiore al target –5%. Analizzare cause: duplicati, urgenze non pianificate, mancata aggregazione. Intervenire subito.'}},
+  ordiniVal:{id:'ordiniVal',label:'Valore Ordini (€)',unit:'€',icon:'💶',isLowerBetter:true,alertTag:'lower',alertDesc:'Obiettivo: –5% vs 2025',
+    settimane:[[5285,113194,83333,62798,null,null,null,null,null,null,null,null],[44618,23816,91053,5853,30875,null,null,null,null,null,null,null],[62339,42297,37574,87160,44686,null,null,null,null,null,null,null],[54154,60412,18482,21138,null,null,null,null,null,null,null,null],[null,null,11313,11835,null,null,null,null,null,null,null,null]],
+    tot2026:[166396,239719,241755,188784,75561,0,0,0,0,0,0,0],
+    tot2025:[163262,246284,167310,173865,150156,120522,176475,36146,209216,163793,174260,136113],
+    get target(){return this.tot2025.map(v=>tgt5pct(v));},
+    azioni:{ok:'✓ Valore ordini sotto target. Monitorare puntualità conferme e rispetto prezzi.',amber:'△ Si consiglia di attenzionare e limitare gli acquisti dove necessario e, se necessario, rinegoziare le condizioni.',warn:'⚠ Valore supera target –5%. Limitare acquisti non urgenti, verificare prezzi, allineare con direzione.'}},
+  segnNum:{id:'segnNum',label:'N° Segnalazioni',unit:'',icon:'⚠',isLowerBetter:true,alertTag:'lower-segn',alertDesc:'Obiettivo: 0 segnalazioni',
+    settimane:[[null,null,null,0,null,null,null,null,null,null,null,null],[null,null,null,0,null,null,null,null,null,null,null,null],[null,null,null,1,null,null,null,null,null,null,null,null],[null,null,null,0,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null]],
+    tot2026:[2,7,6,1,0,0,0,0,0,0,0,0],
+    tot2025:[null,null,null,null,null,1,null,null,5,8,1,2],
+    target:[0,0,0,0,0,0,0,0,0,0,0,0],
+    azioni:{ok:'✓ Nessuna segnalazione. Il processo di qualifica fornitori funziona efficacemente.',amber:'△ Rafforzare i processi di qualifica preventiva e sistematizzare il monitoraggio della conformità.',warn:'⚠ Segnalazioni in aumento. Tendenza suggerisce fragilità nella catena di fornitura. Avviare revisione sistemica dei criteri di selezione fornitori.'}},
+  segnVal:{id:'segnVal',label:'Valore Segnalazioni',unit:'€',icon:'💸',isLowerBetter:true,alertTag:'lower-segn',alertDesc:'Obiettivo: €0,00',
+    settimane:[[0,null,null,null,null,null,null,null,null,null,null,null],[0,null,null,null,null,null,null,null,null,null,null,null],[0,null,null,0,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null,null,null,null,null]],
+    tot2026:[0,0,0,0,0,0,0,0,0,0,0,0],
+    tot2025:[null,null,null,null,null,null,null,null,null,null,null,null],
+    target:[0,0,0,0,0,0,0,0,0,0,0,0],
+    azioni:{ok:'✓ Nessun impatto economico da segnalazioni — risultato eccellente.',amber:'△ Impatto economico presente. Quantificare danno e avviare dialogo con fornitore.',warn:'⚠ Impatto critico. Aprire NC formale, attivare garanzie contrattuali, richiedere nota di credito.'}}
+},fornitori:{
+  lista:['AR FLEXO SAS DI MILAN RUGGERO E C.','BELCOGAMMA S.R.L.','CEB PLAST SAS di Bernardi Alberto & C.','DANPLAST SRL','ELSAPACK SRL','EURONE S.R.L.','IPACK IMOLA','LINEAPLAST SNC DI MAURIZIO E ROBERTO BARDIN','MINIGRIP - GRIP PAK - S.R.L.','POLYPLAST S.R.L.'],
+  dati:{
+    'AR FLEXO SAS DI MILAN RUGGERO E C.':{contestazioni:[null,1,null,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'BELCOGAMMA S.R.L.':{contestazioni:[null,null,1,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'CEB PLAST SAS di Bernardi Alberto & C.':{contestazioni:[1,2,1,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'DANPLAST SRL':{contestazioni:[null,null,1,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'ELSAPACK SRL':{contestazioni:[null,null,1,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'EURONE S.R.L.':{contestazioni:[null,null,1,1,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'IPACK IMOLA':{contestazioni:[null,2,null,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'LINEAPLAST SNC DI MAURIZIO E ROBERTO BARDIN':{contestazioni:[null,1,null,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'MINIGRIP - GRIP PAK - S.R.L.':{contestazioni:[1,null,null,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]},
+    'POLYPLAST S.R.L.':{contestazioni:[null,1,1,null,null,null,null,null,null,null,null,null],valori:[null,null,null,null,null,null,null,null,null,null,null,null]}
+  }}}};
+
+
+// Helper accesso dati fornitore (supporta sia array legacy che oggetto nuovo)
+function fornContest(f){const d=DB.acquisti.fornitori.dati[f];if(!d)return Array(12).fill(null);return Array.isArray(d)?d:(d.contestazioni||Array(12).fill(null));}
+function fornValori(f){const d=DB.acquisti.fornitori.dati[f];if(!d)return Array(12).fill(null);return Array.isArray(d)?Array(12).fill(null):(d.valori||Array(12).fill(null));}
+function fornSetContest(f,m,v){const d=DB.acquisti.fornitori.dati[f];if(Array.isArray(d))DB.acquisti.fornitori.dati[f]=d;else d.contestazioni[m]=v;}
+function fornSetValore(f,m,v){const d=DB.acquisti.fornitori.dati[f];if(!Array.isArray(d))d.valori[m]=v;}
+function ensureFornObj(f){const d=DB.acquisti.fornitori.dati[f];if(Array.isArray(d)){DB.acquisti.fornitori.dati[f]={contestazioni:[...d],valori:Array(12).fill(null)};}}
+
+
+// ═══ SALVATAGGIO SEZIONE ═══
+function saveSection(id){
+  saveToStorage();
+  const ok=document.getElementById('save-ok-'+id);
+  if(ok){ok.classList.add('show');setTimeout(()=>ok.classList.remove('show'),2000);}
+}
+
+
+// ═══ PERSISTENZA DATI — localStorage ═══
+const STORAGE_KEY = 'kpi_acquisti_dati_v3';
+
+function saveToStorage(){
+  try {
+    const payload = {
+      ts: Date.now(),
+      acquisti: {
+        budget_mensile: BUDGET,
+        kpis: {},
+        fornitori: {
+          lista: [...DB.acquisti.fornitori.lista],
+          dati: JSON.parse(JSON.stringify(DB.acquisti.fornitori.dati))
+        }
+      }
+    };
+    // Salva KPI
+    Object.keys(DB.acquisti.kpis).forEach(k => {
+      const kpi = DB.acquisti.kpis[k];
+      payload.acquisti.kpis[k] = {
+        settimane: JSON.parse(JSON.stringify(kpi.settimane)),
+        tot2026: [...kpi.tot2026],
+        tot2025: [...kpi.tot2025],
+        alertDesc: kpi.alertDesc
+      };
+      // Salva target se sovrascritto
+      const desc = Object.getOwnPropertyDescriptor(kpi, 'target');
+      if (desc && !desc.get) payload.acquisti.kpis[k].target = [...kpi.target];
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    return true;
+  } catch(e) {
+    console.warn('saveToStorage error:', e);
+    return false;
+  }
+}
+
+function loadFromStorage(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const d = JSON.parse(raw);
+    if (!d.acquisti) return false;
+    const aq = d.acquisti;
+
+    // Budget
+    if (aq.budget_mensile) {
+      BUDGET = aq.budget_mensile;
+      const bv = document.getElementById('budget-val');
+      if (bv) bv.value = fmtItNum(BUDGET);
+    }
+
+    // KPI
+    const kmap = DB.acquisti.kpis;
+    Object.keys(kmap).forEach(k => {
+      if (!aq.kpis || !aq.kpis[k]) return;
+      const dk = aq.kpis[k];
+      if (dk.settimane) kmap[k].settimane = dk.settimane;
+      if (dk.tot2026)   kmap[k].tot2026   = dk.tot2026;
+      if (dk.tot2025)   kmap[k].tot2025   = dk.tot2025;
+      if (dk.alertDesc) kmap[k].alertDesc  = dk.alertDesc;
+      if (dk.target && Array.isArray(dk.target)) {
+        Object.defineProperty(kmap[k], 'target', {value:[...dk.target], writable:true, configurable:true});
+      }
+    });
+
+    // Fornitori
+    if (aq.fornitori) {
+      if (aq.fornitori.lista) DB.acquisti.fornitori.lista = [...aq.fornitori.lista];
+      if (aq.fornitori.dati)  DB.acquisti.fornitori.dati  = JSON.parse(JSON.stringify(aq.fornitori.dati));
+    }
+
+    console.log('✓ Dati caricati dal browser (' + new Date(d.ts).toLocaleString('it-IT') + ')');
+    return true;
+  } catch(e) {
+    console.warn('loadFromStorage error:', e);
+    return false;
+  }
+}
+
+function clearStorage(){
+  if(confirm('Sei sicuro di voler cancellare tutti i dati salvati? L\'operazione non è reversibile.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+}
+
+// Auto-salvataggio ogni volta che i dati cambiano
+let _saveTimer = null;
+function autoSave(){
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{ saveToStorage(); }, 800);
+}
+
+// ═══ FORMATTAZIONE ═══
+function fmtN(v,u){if(v==null)return'—';const n=parseFloat(v);if(isNaN(n))return'—';if(u==='€')return'€\u00a0'+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});return n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:2});}
+function fmtNZ(v,u){if(v==null)return'—';const n=parseFloat(v);if(isNaN(n))return'—';if(u==='€')return'€\u00a0'+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});return n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:2});}
+function fmtTgt(v,u){if(v==null)return'—';const n=Math.ceil(parseFloat(v));if(u==='€')return'€\u00a0'+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});return n.toLocaleString('it-IT');}
+function fmtK(v,u){if(v==null)return'—';const n=parseFloat(v);if(u==='€'){if(Math.abs(n)>=1e6)return'€\u00a0'+(n/1e6).toFixed(1).replace('.',',')+'M';if(Math.abs(n)>=1e3)return'€\u00a0'+n.toLocaleString('it-IT',{maximumFractionDigits:0});return'€\u00a0'+n.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}return n.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0});}
+
+// ═══ STATUS ═══
+function st(kpi,val,tgt){
+  const v=parseFloat(val)||0,t=parseFloat(tgt)||0;
+  if(kpi.isLowerBetter){if(t===0)return v===0?'ok':'warn';if(v<t)return'ok';if(v===t)return'amber';return'warn';}
+  if(t===0)return'neutral';const r=v/t;if(r>=0.95)return'ok';if(r>=0.80)return'amber';return'warn';
+}
+function cellColorCls(kpi,val,tgt){const s=st(kpi,val,tgt);return s==='ok'?'c-ok':s==='warn'?'c-warn':s==='amber'?'c-amber':'c-neu';}
+function stColor(s){return{ok:'#84cc16',warn:'#dc2626',amber:'#d97706',neutral:'#94a3b8'}[s]||'#94a3b8';}
+// Colore gauge KPI mensile: verde=sotto target, arancione=uguale a 2025, rosso=supera target
+function gaugeColor(val,tgt,tot25){
+  const v=parseFloat(val)||0, t=parseFloat(tgt)||0, p25=parseFloat(tot25)||0;
+  if(t===0) return v===0?'#84cc16':'#dc2626';
+  if(v>t) return '#dc2626';          // supera target → rosso
+  if(p25>0 && Math.abs(v-p25)<0.01) return '#d97706'; // uguale a 2025 → arancione
+  return '#84cc16';                   // sotto target → verde
+}
+function stBadge(s){return{ok:'b-ok',warn:'b-warn',amber:'b-amber',neutral:'b-neu'}[s]||'b-neu';}
+function stLabel(s){return{ok:'✓ OK',warn:'⚠ Alert',amber:'△ Attenzione',neutral:'— N/D'}[s]||'—';}
+function ytd4(arr){return arr.slice(0,4).reduce((a,v)=>a+(parseFloat(v)||0),0);}
+
+// ═══ NAVIGAZIONE ═══
+let chartReg={};
+// Visibilità serie per grafico: {chartId: {s25:bool, s26:bool, stgt:bool}}
+const chartVis={};
+const chartAxisMax={}; // custom max per asse Y di ogni grafico
+function getVis(id){if(!chartVis[id])chartVis[id]={s25:true,s26:true,stgt:true};return chartVis[id];}
+function setAxisMax(id,val,kpi){
+  const n=parseFloat(val.replace('.','').replace(',','.'));
+  if(isNaN(n)||n<=0)return;
+  chartAxisMax[id]=n;
+  // Ricalcola il grafico
+  if(kpi)mkChart(id,DB.acquisti.kpis[kpi]);
+  else{
+    // trova il KPI dal map
+    const kmap={'ch-a1':'ordiniNum','ch-a2':'ordiniVal',
+                'ch-c1':'ordiniNum','ch-c2':'ordiniVal'};
+    if(kmap[id])mkChart(id,DB.acquisti.kpis[kmap[id]]);
+  }
+}
+// Override target annuo per KPI (sovrascrive la somma calcolata)
+const kpiYtdOverride={}; // {kpiId_ytd: value, kpiId_tgt: value}
+function editYtdVal(kpiId,type){
+  const kpi=DB.acquisti.kpis[kpiId];
+  const isEuro=kpi.unit==='€';
+  const curKey=kpiId+'_'+type;
+  const curVal=kpiYtdOverride[curKey]!=null?kpiYtdOverride[curKey]:(type==='ytd'?ytd4(kpi.tot2026):ytd4(kpi.target));
+  const nv=prompt(type==='ytd'?'Totale Annuo 2026:':'Target Totale Annuo 2026:',
+    isEuro?fmtItEuro(curVal):fmtItNum(curVal));
+  if(nv===null)return;
+  const n=isEuro?parseFmt(nv):parseFloat(nv.replace('.','').replace(',','.'));
+  if(isNaN(n))return;
+  kpiYtdOverride[curKey]=n;
+  buildRiepilogoColumns();
+}
+function editAlertDesc(kpiId){
+  const kpi=DB.acquisti.kpis[kpiId];
+  const cur=kpi.alertDesc;
+  const nv=prompt('Modifica obiettivo:',cur);
+  if(nv===null||nv===nv&&nv.trim()===cur)return;
+  kpi.alertDesc=nv.trim();
+  // Rigenera il riepilogo e aggiorna cruscotto/alert
+  buildRiepilogoColumns();
+  refreshAll();
+}
+function toggleChartSerie(id,serie){
+  const v=getVis(id);v[serie]=!v[serie];
+  // Aggiorna classe bottone
+  const btn=document.getElementById(`cfb-${id}-${serie}`);
+  if(btn){const map={s25:'on-25',s26:'on-26',stgt:'on-tgt'};btn.className=`cfb ${v[serie]?map[serie]:''}`; btn.style.opacity=v[serie]?'1':'0.4';}
+  // Aggiorna visibilità dataset nel chart
+  const chart=chartReg[id];if(!chart)return;
+  const idx={s25:0,s26:1,stgt:2}[serie];
+  const meta=chart.getDatasetMeta(idx);meta.hidden=!v[serie];chart.update();
+}
+function nav(v,el){
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v)?.classList.add('active');
+  if(el){el.classList.add('active');if(el.classList.contains('ni-sub'))document.querySelector(`[data-v="${v}"]:not(.ni-sub)`)?.classList.add('active');}
+  document.getElementById('bcrumb').textContent=el?el.textContent.trim().replace(/[📦💶⚠💸📊📈🎯🏭✏️⚙💰🏆📋]/g,'').trim():v;
+  if(v==='acquisti')buildAcquisti();
+  if(v==='inserimento')buildInsForm();
+}
+function goto(id){setTimeout(()=>document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'}),120);}
+
+// ═══ GAUGE SVG — più leggibile con arco ampio ═══
+function mkGaugeSVG(pct,color,sz=130,mLabel=''){
+  const p=Math.max(0,Math.min(100,pct||0));
+  const r=44,cx=sz/2,cy=sz*0.62;
+  const sA=-215*Math.PI/180,eA=35*Math.PI/180;
+  const fA=sA+(eA-sA)*(p/100);
+  const pt=a=>({x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)});
+  const arc=(a1,a2)=>{const p1=pt(a1),p2=pt(a2);const lg=(a2-a1)>Math.PI?1:0;return`M${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A${r} ${r} 0 ${lg} 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;};
+  const h=Math.round(sz*0.72);
+  const track=`<path d="${arc(sA,eA)}" fill="none" stroke="#e2e8f0" stroke-width="12" stroke-linecap="round"/>`;
+  const filled=p>0?`
+    <path d="${arc(sA,fA)}" fill="none" stroke="${color}28" stroke-width="18" stroke-linecap="round"/>
+    <path d="${arc(sA,fA)}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"/>
+    <path d="${arc(sA,fA)}" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.25"/>`:'';
+  const endPt=p>0?pt(fA):null;
+  const dot=endPt?`<circle cx="${endPt.x.toFixed(2)}" cy="${endPt.y.toFixed(2)}" r="5.5" fill="${color}" stroke="white" stroke-width="2.5"/>`:'';
+  // Mese al centro dell'arco
+  const mText=mLabel?`<text x="${cx}" y="${cy+6}" font-family="Montserrat,sans-serif" font-size="10" font-weight="700" fill="#94a3b8" text-anchor="middle" letter-spacing="0.3">${mLabel.toUpperCase()}</text>`:'';
+  return`<svg viewBox="0 0 ${sz} ${h}" style="width:${sz}px;height:${h}px;display:block;margin:0 auto;overflow:visible;max-width:100%">
+    ${track}${filled}${dot}${mText}
+  </svg>`;
+}
+
+function gaugeForLower(val,tgt){
+  if(tgt===0)return val===0?100:0;
+  if(val<=0)return 100;
+  return Math.max(0,Math.min(100,Math.round((1-val/tgt)*50+50)));
+}
+
+// ═══ RIEPILOGO A COLONNE — altezze uniformi ═══
+function buildRiepilogoColumns(){
+  const mese=parseInt(document.getElementById('riepilogo-mese')?.value||'0');
+  const wrap=document.getElementById('riepilogo-cols');if(!wrap)return;
+  const MAX_INPUTS=5; // sempre 5 righe input
+  let html='';
+
+  KS.map(k=>DB.acquisti.kpis[k]).forEach(kpi=>{
+    const tot26=kpi.tot2026[mese],tot25=kpi.tot2025[mese],tgt=kpi.target[mese];
+    const s=st(kpi,tot26,tgt),col=gaugeColor(tot26,tgt,tot25);
+    const pct=gaugeForLower(tot26,tgt);
+    const isEuro=kpi.unit==='€';
+    const ytdV=kpiYtdOverride[kpi.id+"_ytd"]!=null?kpiYtdOverride[kpi.id+"_ytd"]:ytd4(kpi.tot2026);
+    const ytdT=kpiYtdOverride[kpi.id+"_tgt"]!=null?kpiYtdOverride[kpi.id+"_tgt"]:ytd4(kpi.target);
+
+    const inputsHtml=[0,1,2,3,4].map(i=>{
+      const v=kpi.settimane[i][mese],val=(v!=null&&v!==0)?v:'';
+      if(isEuro){
+        const rawVal=val!==''?parseFloat(val):null;
+        const dispVal=rawVal!==null?fmtItEuro(rawVal):'';
+        return`<div class="rc-inp-row"><span class="rc-inp-lbl">S${i+1}</span><div class="rc-inp-euro"><span class="rc-inp-euro-sym">€</span><input type="text" inputmode="decimal" data-raw="${rawVal!==null?rawVal:''}" value="${dispVal}" id="rc-${kpi.id}-s${i}" onchange="onRcChange('${kpi.id}',${i},${mese},parseFmt(this.value))" onfocus="const r=parseFmt(this.value)??parseFloat(this.dataset.raw||0);this.value=r?String(r).replace('.',','):'';" onblur="const r=parseFmt(this.value);if(r!=null){this.value=fmtItEuro(r);this.dataset.raw=r;}else this.value='';" placeholder="—"></div></div>`;
+      }
+      return`<div class="rc-inp-row"><span class="rc-inp-lbl">S${i+1}</span><input type="number" step="any" value="${val}" class="rc-plain" id="rc-${kpi.id}-s${i}" onchange="onRcChange('${kpi.id}',${i},${mese},this.value)" placeholder="—" style="text-align:center;font-variant-numeric:tabular-nums;"></div>`;
+    }).join('');
+
+    html+=`<div class="riepilogo-col-box">
+      <div class="rc-head"><div class="rc-icon">${kpi.icon}</div><div class="rc-title">${kpi.label}</div></div>
+      <div class="rc-inputs">${inputsHtml}</div>
+      
+
+    </div>`;
+  });
+
+
+  // ─── Colonna 3: Tabella Segnalazioni Fornitori ───
+  const{lista:flista2,dati:fdati2}=DB.acquisti.fornitori;
+  const MESI_B=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+  let col3='';
+  col3+=`<div class="riepilogo-col-box" style="grid-column:3;grid-row:1/-1;display:flex;flex-direction:column;border-right:none;background:var(--surf2);">`;
+  // Header
+  col3+=`<div class="rc-head">
+    <div class="rc-icon">✏️</div>
+    <div class="rc-title">Segnalazioni Fornitori</div>
+    
+  </div>`;
+  // Form inserimento rapido
+  col3+=`<div style="padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surf2);">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+      <div class="field">
+        <label>Fornitore</label>
+        <select id="rc-forn-ac" onchange="syncFornAc(this.value)"
+          style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1.5px solid var(--border2);border-radius:var(--r2);background:var(--surf);color:var(--text);outline:none;width:100%;padding:4px 6px;height:28px;">
+          <option value="">— Seleziona —</option>
+          ${flista2.map(f=>`<option value="${f}">${f}</option>`).join('')}
+          <option value="__new__">+ Nuovo...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Mese</label>
+        <select id="rc-forn-mese"
+          style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1.5px solid var(--border2);border-radius:var(--r2);background:var(--surf);color:var(--text);outline:none;width:100%;padding:4px 6px;height:28px;">
+          ${MESI.map((m,i)=>`<option value="${i}" ${i===mese?'selected':''}>${m}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>N° Contestazioni</label>
+        <input type="number" id="rc-forn-qty" min="0" step="1" placeholder="0" onchange="saveRcForn();autoSave()"
+          style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1.5px solid var(--border2);border-radius:var(--r2);background:var(--surf);color:var(--text);outline:none;width:100%;padding:4px 6px;height:28px;text-align:center;">
+      </div>
+      <div class="field">
+        <label>Importo (€)</label>
+        <div style="display:flex;align-items:center;border:1.5px solid var(--border2);border-radius:var(--r2);background:var(--surf);height:28px;overflow:hidden;">
+          <span style="padding:0 5px;font-size:10px;font-weight:700;color:var(--text3);border-right:1px solid var(--border2)">€</span>
+          <input type="text" inputmode="decimal" id="rc-forn-valore" placeholder="0,00"
+            onfocus="const r=parseFmt(this.value);this.value=r!=null?r:'';"
+            onblur="const n=parseFmt(this.value);this.value=n!=null?fmtItEuro(n):'';saveRcForn();autoSave();"
+            style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:none;background:transparent;color:var(--text);outline:none;width:100%;padding:0 5px;">
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+  col3+=`</div>`;
+  html+=col3;
+
+  wrap.innerHTML=html;
+  buildAlertBar();
+}
+
+function buildAlertBar(){
+  const bar=document.getElementById('riepilogo-alerts-bar');if(!bar)return;
+  const mese=parseInt(document.getElementById('riepilogo-mese')?.value||'0');
+  const hasAlerts=KS.some(k=>{const kpi=DB.acquisti.kpis[k];const v=kpi.tot2026[mese],t=kpi.target[mese];return st(kpi,v,t)!=='ok';});
+
+  const cols=KS.length+1; // +1 per colonna segnalazioni
+  let alertHtml=`<div class="alert-bar" style="grid-template-columns:1fr 1fr 1fr;">`;
+
+  KS.map(k=>DB.acquisti.kpis[k]).forEach(kpi=>{
+    const tot26=kpi.tot2026[mese],tot25=kpi.tot2025[mese],tgt=kpi.target[mese];
+    const s=st(kpi,tot26,tgt),col=gaugeColor(tot26,tgt,tot25);
+    const isEuro=kpi.unit==='€';
+    const valStr=(tot26===0)?'—':(isEuro?'€ '+fmtItEuro(tot26):fmtItNum(tot26));
+    const tgtStr=(tgt==null||tgt===0)?'—':(isEuro?'€ '+fmtItEuro(Math.ceil(tgt)):fmtItNum(Math.ceil(tgt)));
+    const t25Str=(tot25==null||tot25===0)?'—':(isEuro?'€ '+fmtItEuro(tot25):fmtItNum(tot25));
+
+    const badge=s==='ok'
+      ?`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(132,204,22,0.1);color:#3f6212;border:1px solid rgba(132,204,22,0.25)">✓ OK</span>`
+      :s==='warn'
+      ?`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(239,68,68,0.08);color:#dc2626;border:1px solid rgba(239,68,68,0.2)">⚠ Alert</span>`
+      :`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(245,158,11,0.08);color:#b45309;border:1px solid rgba(245,158,11,0.2)">△ Attenzione</span>`;
+
+    alertHtml+=`<div class="alert-bar-cell">
+      <div class="alert-kpi-lbl">${kpi.icon} ${kpi.label} ${badge}</div>
+      <div class="alert-kpi-val" style="color:${col}">${valStr}</div>
+      <div class="alert-kpi-meta">
+        <span><span>TOTALE 2025</span><span style="font-weight:700;color:var(--text2)">${t25Str}</span></span>
+        <span><span>TARGET 2026</span><span style="font-weight:700;color:var(--text)">${tgtStr}</span></span>
+      </div>
+
+    </div>`;
+  });
+
+  // Colonna segnalazioni
+  const{lista,dati}=DB.acquisti.fornitori;
+  const fornTot=lista.reduce((a,f)=>a+(fornContest(f)[mese]||0),0);
+  const fornVal=lista.reduce((a,f)=>a+(fornValori(f)[mese]||0),0);
+  const sfCol=gaugeColor(fornTot,0,0);
+  const sf=fornTot===0?'ok':fornTot<=2?'amber':'warn';
+  const sfBadge=sf==='ok'
+    ?`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(132,204,22,0.1);color:#3f6212;border:1px solid rgba(132,204,22,0.25)">✓ OK</span>`
+    :sf==='warn'
+    ?`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(239,68,68,0.08);color:#dc2626;border:1px solid rgba(239,68,68,0.2)">⚠ Alert</span>`
+    :`<span style="font-size:8px;font-weight:700;padding:2px 7px;border-radius:8px;background:rgba(245,158,11,0.08);color:#b45309;border:1px solid rgba(245,158,11,0.2)">△ Attenzione</span>`;
+  const FORN_AZIONI={ok:'✓ Nessuna contestazione attiva. Il processo di qualifica fornitori funziona efficacemente.',amber:'△ Contestazione in corso. Monitorare e avviare CAR preventivo con il fornitore.',warn:'⚠ Contestazioni critiche. Avviare azioni correttive prioritarie. Valutare fornitori alternativi qualificati.'};
+  const fornAz=FORN_AZIONI[sf]||'';
+  alertHtml+=`<div class="alert-bar-cell">
+    <div class="alert-kpi-lbl">✏️ Segnalazioni Fornitori ${sfBadge}</div>
+    <div class="alert-kpi-val" style="color:${sfCol}">${fornTot||'—'}</div>
+    <div class="alert-kpi-meta">
+      <span><span>N° CONTESTAZIONI</span><span style="font-weight:700;color:${fornTot>0?'var(--red)':'var(--text2)'}">${fornTot||'—'}</span></span>
+      <span><span>IMPORTO MESE</span><span style="font-weight:700;color:${fornVal>0?'var(--accent)':'var(--text2)'}">${fornVal>0?'€ '+fmtItEuro(fornVal):'—'}</span></span>
+    </div>
+  </div>`;
+
+  alertHtml+=`</div>`;
+  bar.innerHTML=alertHtml;
+  bar.style.display='block';
+}
+
+
+
+function rcEditTot25(el,kpiId,mese,typ){
+  const cur=DB.acquisti.kpis[kpiId].tot2025[mese];
+  const v=prompt('Totale 2025:',cur!=null?cur:'');
+  if(v===null)return;
+  const n=typ==='euro'?parseFmt(v):parseFloat(v.replace(',','.'));
+  DB.acquisti.kpis[kpiId].tot2025[mese]=isNaN(n)?null:n;
+  const fmt=isNaN(n)?'—':(typ==='euro'?'€\u00a0'+fmtItEuro(n):fmtItNum(n));
+  el.textContent=fmt;
+  buildAllKpiTables();
+  autoSave();
+}
+function rcEditTgt(el,kpiId,mese,typ){
+  const kpi=DB.acquisti.kpis[kpiId];
+  const cur=kpi.target[mese];
+  const v=prompt('Target KPI:',cur!=null?Math.ceil(cur):'');
+  if(v===null)return;
+  const n=typ==='euro'?parseFmt(v):parseFloat(v.replace(',','.'));
+  if(typeof Object.getOwnPropertyDescriptor(kpi,'target')?.get!=='undefined'){
+    const cv=[...kpi.target];Object.defineProperty(kpi,'target',{value:cv,writable:true,configurable:true});
+  }
+  kpi.target[mese]=isNaN(n)?0:n;
+  const fmt=isNaN(n)?'—':(typ==='euro'?'€\u00a0'+fmtItEuro(Math.ceil(n)):fmtItNum(Math.ceil(n)));
+  el.textContent=fmt;
+  recalcTot(kpiId);buildAllKpiTables();
+  autoSave();
+}
+function onRcTot25Chg(kpiId,m,val){
+  DB.acquisti.kpis[kpiId].tot2025[m]=val===''?null:parseFloat(val)||null;
+  buildAllKpiTables();
+}
+function onRcTgtChg(kpiId,m,val){
+  const kpi=DB.acquisti.kpis[kpiId];
+  // Converti getter in array statico se necessario
+  if(typeof Object.getOwnPropertyDescriptor(kpi,'target')?.get!=='undefined'){
+    const cv=[...kpi.target];
+    Object.defineProperty(kpi,'target',{value:cv,writable:true,configurable:true});
+  }
+  kpi.target[m]=val===''?null:parseFloat(val)||0;
+  recalcTot(kpiId);buildAllKpiTables();
+}
+function onRcChange(kpiId,s,m,val){
+  const nSafe=(val===''||val===null)?null:(typeof val==='number'?val:parseFmt(String(val)));
+  DB.acquisti.kpis[kpiId].settimane[s][m]=nSafe;
+  recalcTot(kpiId);
+  const kpi=DB.acquisti.kpis[kpiId];const tot=kpi.tot2026[m],tgt=kpi.target[m];
+  const el=document.getElementById(`rc-tot26-${kpiId}`);
+  if(el){
+    const dispTot=tot===0&&m>=4?null:tot;
+    el.textContent=dispTot!=null&&dispTot!==0?(kpi.unit==='€'?'€\u00a0'+fmtItEuro(dispTot):fmtItNum(dispTot)):'—';
+    el.className=`rc-tot-val ${cellColorCls(kpi,tot,tgt)}`;
+  }
+  refreshCounters();buildBudgetChart();buildAlertBar();
+  const _ti=document.getElementById("inp-"+kpiId+"-s"+s+"-m"+m);
+  if(_ti){const _ku=DB.acquisti.kpis[kpiId].unit;_ti.value=nSafe!=null?(_ku==="€"?fmtItEuro(nSafe):String(nSafe)):"";}
+  const _tc=document.getElementById("tot26-"+kpiId+"-"+m);
+  if(_tc){const _tv=DB.acquisti.kpis[kpiId].tot2026[m];_tc.textContent=_tv&&_tv>0?fmtNZ(_tv,DB.acquisti.kpis[kpiId].unit):"—";const _cls=_tv&&_tv>0?cellColorCls(DB.acquisti.kpis[kpiId],_tv,DB.acquisti.kpis[kpiId].target[m]):"c-neu";_tc.className=(m===0?"col-sep ":"")+" "+_cls;}
+  autoSave();
+}
+function onRcFornChange(f,m,val){
+  DB.acquisti.fornitori.dati[f][m]=val===''?null:parseFloat(val);
+  const tot=DB.acquisti.fornitori.lista.reduce((a,fn)=>a+(DB.acquisti.fornitori.dati[fn][m]||0),0);
+  const el=document.getElementById('rc-forn-tot');if(el){el.textContent=tot;el.style.color=tot>0?'var(--red)':'#84cc16';}
+  buildForniChart();buildFornitori();
+}
+function saveRiepilogo(){
+  KS.forEach(k=>recalcTot(k));
+  document.getElementById('lastSave').textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  buildAllKpiTables();buildAllCharts();buildBudgetChart();buildForniChart();refreshAll();
+}
+
+// ═══ TOP/FLOP CRUSCOTTO ═══
+function buildTopFlop(){
+  const top=[],flop=[];
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];
+    const v26=ytd4(kpi.tot2026),tgt=ytd4(kpi.target);
+    const s=st(kpi,v26,tgt);
+    const entry={dept:'🛒 Acquisti',kpi:`${kpi.icon} ${kpi.label}`,val:fmtK(v26,kpi.unit),tgt:fmtK(tgt,kpi.unit),status:s};
+    if(s==='ok')top.push(entry);else flop.push(entry);
+  });
+  // Fornitori
+  const fornTotYtd=DB.acquisti.fornitori.lista.reduce((a,f)=>DB.acquisti.fornitori.dati[f].slice(0,4).reduce((b,v)=>b+(v||0),0)+a,0);
+  const fornEntry={dept:'🛒 Acquisti',kpi:'🏭 Segnalazioni Fornitori',val:`${fornTotYtd} segn.`,tgt:'0',status:fornTotYtd===0?'ok':'warn'};
+  if(fornTotYtd===0)top.push(fornEntry);else flop.push(fornEntry);
+
+  const renderRows=(arr,emptyMsg)=>{
+    if(!arr.length)return`<div style="padding:18px;text-align:center;color:var(--text3);font-size:11px;font-weight:600">${emptyMsg}</div>`;
+    return arr.map(e=>`<div class="topflop-row">
+      <div><div class="topflop-dept">${e.dept}</div><div class="topflop-kpi">${e.kpi}</div></div>
+      <div style="text-align:right">
+        <div class="topflop-val" style="color:${stColor(e.status)}">${e.val}</div>
+        <div style="font-size:9px;color:var(--text3)">Target: ${e.tgt}</div>
+        <span class="topflop-badge ${stBadge(e.status)}" style="font-size:9px">${stLabel(e.status)}</span>
+      </div>
+    </div>`).join('');
+  };
+  document.getElementById('topflop-top').innerHTML=renderRows(top,'Nessun KPI in linea al momento');
+  document.getElementById('topflop-flop').innerHTML=renderRows(flop,'🎉 Tutti i KPI sono in target!');
+}
+
+// ═══ ASSE DINAMICO ═══
+const AXIS_CFG={ordiniNum:{base:400,step:100},ordiniVal:{base:300000,step:100000},segnNum:{base:30,step:10},segnVal:{base:100000,step:50000}};
+function calcAxisMax(id,d25,d26,tgt){const c=AXIS_CFG[id];if(!c)return undefined;const all=[...d25,...d26,...tgt].filter(v=>v!=null&&!isNaN(v));const mx=all.length?Math.max(...all):0;let m=c.base;while(mx>m)m+=c.step;return m;}
+
+// ═══ CHART FACTORY ═══
+const C25={line:'#6b7280',fill:'rgba(107,114,128,0.07)',point:'#6b7280'};
+const C26={line:'#111',fill:'rgba(17,17,17,0.06)',point:'#111'};
+const CTGT={line:'#84cc16',fill:'rgba(132,204,22,0.05)',point:'#84cc16'};
+function mkDS(label,data,c,dashed=false){return{label,data,borderColor:c.line,backgroundColor:c.fill,pointBackgroundColor:c.point,pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:5,pointHoverRadius:7,borderWidth:2.2,borderDash:dashed?[6,4]:[],tension:0.35,fill:true};}
+function mkChart(id,kpi){
+  if(chartReg[id]){chartReg[id].destroy();delete chartReg[id];}
+  const ctx=document.getElementById(id)?.getContext('2d');if(!ctx)return;
+  const d26=kpi.tot2026.map((v,i)=>i<4||v>0?v:null);
+  const d25=kpi.tot2025.map(v=>v===null?null:v);
+  const tgt=kpi.target;
+  const yMax=chartAxisMax[id]||calcAxisMax(kpi.id,d25,d26,tgt);const isEuro=kpi.unit==='€';
+  chartReg[id]=new Chart(ctx,{type:'line',data:{labels:MS,datasets:[mkDS('2025',d25,C25),mkDS('2026',d26,C26),mkDS('Target',tgt,CTGT,true)]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:'#0f172a',bodyColor:'#334155',padding:10,titleFont:{family:'Montserrat',weight:'800',size:11},bodyFont:{family:'Montserrat',size:11},
+        callbacks:{label:(ctx)=>{const v=ctx.parsed.y;if(v==null)return null;return' '+ctx.dataset.label+': '+(isEuro?'€\u00a0'+v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toLocaleString('it-IT'));}}}},
+      scales:{x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8'}},
+        y:{min:0,max:yMax,grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8',callback:v=>isEuro?'€'+v.toLocaleString('it-IT',{maximumFractionDigits:0}):v.toLocaleString('it-IT')}}}}});
+}
+
+// ═══ CLASSIFICA FORNITORI — SCALA DI GRIGI ═══
+function buildForniChart(){
+  if(chartReg['ch-fornitori']){chartReg['ch-fornitori'].destroy();delete chartReg['ch-fornitori'];}
+  const ctx=document.getElementById('ch-fornitori')?.getContext('2d');if(!ctx)return;
+  const{lista,dati}=DB.acquisti.fornitori;
+  if(!lista.length){ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);return;}
+  // Classifica: totale per fornitore, ordinato desc
+  const rank=lista.map(f=>({f,tot:fornContest(f).reduce((a,v)=>a+(v||0),0)}))
+    .sort((a,b)=>b.tot-a.tot);
+  const labels=rank.map(r=>r.f);
+  const vals=rank.map(r=>r.tot);
+  // Colori per rank: 1°=rosso scuro, 2°=arancione, 3°=ambra, resto=grigio
+  // Scala di grigi: dal più scuro (1°) al più chiaro (ultimi)
+  const totalBars=vals.length||1;
+  const bgColors=vals.map((v,i)=>{
+    if(v===0)return'#e2e8f0';
+    // Interpola da #1e1e1e (scuro) a #b0b0b0 (chiaro)
+    const t=totalBars>1?i/(totalBars-1):0;
+    const gray=Math.round(30+t*140);
+    return`rgb(${gray},${gray},${gray})`;
+  });
+  const maxV=vals.length?Math.max(...vals,1):1;
+  chartReg['ch-fornitori']=new Chart(ctx,{type:'bar',
+    data:{labels,datasets:[{
+      label:'Segnalazioni totali 2026',
+      data:vals,
+      backgroundColor:bgColors,
+      borderRadius:6,
+      borderSkipped:false,
+      barThickness:28,
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      indexAxis:'y',
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#fff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,
+          titleColor:'#0f172a',bodyColor:'#334155',padding:10,
+          titleFont:{family:'Montserrat',weight:'800',size:11},
+          bodyFont:{family:'Montserrat',size:11},
+          callbacks:{label:(ctx)=>{
+            const v=ctx.parsed.x;
+            const rank=ctx.dataIndex+1;
+            return` ${rank}° posto — ${v} segnalazioni`;
+          }}
+        },
+        // Etichette valore sulle barre
+        datalabels:undefined
+      },
+      scales:{
+        x:{min:0,grid:{color:'rgba(0,0,0,0.04)'},
+          ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8',stepSize:1,
+            callback:v=>Number.isInteger(v)?v:null}},
+        y:{grid:{display:false},
+          ticks:{font:{family:'Montserrat',size:11,weight:'700'},color:'#334155'}}
+      },
+      // Plugin inline per etichette valore dentro/fuori la barra
+      animation:{onComplete:(chart)=>{
+        const{ctx:c2,data,chartArea}=chart.chart;
+        c2.save();
+        c2.font='bold 11px Montserrat';
+        c2.fillStyle='#fff';
+        c2.textAlign='left';
+        data.datasets[0].data.forEach((v,i)=>{
+          if(!v)return;
+          const meta=chart.chart.getDatasetMeta(0);
+          const bar=meta.data[i];
+          if(!bar)return;
+          const x=bar.x+6,y=bar.y;
+          c2.fillStyle=v>0?'#fff':'#94a3b8';
+          c2.fillText(v,x>chartArea.left+30?x-30:x,y+4);
+        });
+        c2.restore();
+      }}
+    }
+  });
+}
+
+// ═══ BUDGET TERMOMETRO — colore grigio/rosso ═══
+function buildBudgetChart(){
+  BUDGET=parseFmt(document.getElementById('budget-val')?.value)||150000;
+  if(chartReg['ch-budget']){chartReg['ch-budget'].destroy();delete chartReg['ch-budget'];}
+  const ctx=document.getElementById('ch-budget')?.getContext('2d');if(!ctx)return;
+  const mese=parseInt(document.getElementById('riepilogo-mese')?.value||'0');
+  const spesaMesi=DB.acquisti.kpis.ordiniVal.tot2026.map((v,i)=>i<4||v>0?v:null);
+  const budgetLine=Array(12).fill(BUDGET);
+  // Calcola yMax dinamico
+  const allVals=[...spesaMesi.filter(v=>v!=null),BUDGET];
+  const maxVal=Math.max(...allVals);
+  let yMax=300000; while(maxVal>yMax)yMax+=100000;
+  chartReg['ch-budget']=new Chart(ctx,{type:'line',
+    data:{labels:MS,datasets:[
+      {label:'Spesa 2026 (€)',data:spesaMesi,
+        borderColor:'#111111',backgroundColor:'rgba(17,17,17,0.06)',
+        pointBackgroundColor:'#111111',pointBorderColor:'#fff',pointBorderWidth:2,
+        pointRadius:5,pointHoverRadius:7,borderWidth:2.2,tension:0.35,fill:true},
+      {label:`Budget €${BUDGET.toLocaleString('it-IT')}`,data:budgetLine,
+        borderColor:'#84cc16',backgroundColor:'rgba(132,204,22,0.05)',
+        pointBackgroundColor:'#84cc16',pointBorderColor:'#fff',pointBorderWidth:2,
+        pointRadius:4,pointHoverRadius:6,borderWidth:2,borderDash:[6,4],tension:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#fff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,
+          titleColor:'#0f172a',bodyColor:'#334155',padding:10,boxPadding:4,
+          titleFont:{family:'Montserrat',weight:'800',size:11},bodyFont:{family:'Montserrat',size:11},
+          callbacks:{label:(ctx)=>{
+            const v=ctx.parsed.y;if(v==null)return null;
+            if(ctx.datasetIndex===1)return` Budget: €\u00a0${v.toLocaleString('it-IT',{maximumFractionDigits:0})}`;
+            const res=Math.max(0,BUDGET-v),over=Math.max(0,v-BUDGET);
+            let t=` Spesa: €\u00a0${v.toLocaleString('it-IT',{maximumFractionDigits:0})}`;
+            if(over>0)t+=` | ⚠ Sforato: €\u00a0${over.toLocaleString('it-IT',{maximumFractionDigits:0})}`;
+            else t+=` | ✓ Residuo: €\u00a0${res.toLocaleString('it-IT',{maximumFractionDigits:0})}`;
+            return t;
+          }}}},
+      scales:{
+        x:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8'}},
+        y:{min:0,max:yMax,grid:{color:'rgba(0,0,0,0.04)'},
+          ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8',
+            callback:v=>'€'+v.toLocaleString('it-IT',{maximumFractionDigits:0})}}}}});
+
+  // Detail box
+  const detail=document.getElementById('budget-thermo-detail');if(!detail)return;
+  const meseSp=spesaMesi[mese];const residuo=Math.max(0,BUDGET-meseSp);const over=Math.max(0,meseSp-BUDGET);
+  const perc=Math.min(100,(meseSp/BUDGET*100));const col=meseSp>=BUDGET?'#dc2626':'#84cc16';
+  detail.innerHTML=`
+    <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px">📅 ${MESI[mese]} 2026</div>
+    <div style="font-size:26px;font-weight:900;color:${col};letter-spacing:-1.5px;margin-bottom:3px">€\u00a0${meseSp.toLocaleString('it-IT',{maximumFractionDigits:0})}</div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:14px">spesa del mese</div>
+    <div style="height:16px;background:var(--surf4);border-radius:8px;overflow:hidden;margin-bottom:5px;box-shadow:inset 0 1px 3px rgba(0,0,0,0.08)">
+      <div style="height:100%;width:${perc}%;background:${col};border-radius:8px;transition:width .7s ease"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--text3);margin-bottom:16px"><span>€0</span><span>Budget: €\u00a0${BUDGET.toLocaleString('it-IT')}</span></div>
+    ${over>0
+      ?`<div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:8px;padding:12px;font-size:11px;color:#991b1b"><strong>⚠ Sforato di €\u00a0${over.toLocaleString('it-IT',{maximumFractionDigits:0})}</strong><br>Budget mensile superato. Limitare ulteriori acquisti e allineare con la direzione.</div>`
+      :`<div style="background:rgba(132,204,22,0.08);border:1px solid rgba(132,204,22,0.3);border-radius:8px;padding:12px;font-size:11px;color:#3f6212"><strong>✓ Residuo: €\u00a0${residuo.toLocaleString('it-IT',{maximumFractionDigits:0})}</strong><br>Budget disponibile. Utilizzare con priorità per ordini strategici.</div>`
+    }
+    <div style="margin-top:10px;font-size:10px;color:var(--text3);font-weight:600">Budget annuale: €\u00a0${(BUDGET*12).toLocaleString('it-IT')}</div>`;
+}
+
+// ═══ TABELLE KPI ═══
+function buildKpiTable(containerId,kpiId){
+  const kpi=DB.acquisti.kpis[kpiId];const u=kpi.unit;
+  const hasDatiMese=(m)=>kpi.settimane.some(s=>s[m]!=null&&s[m]!==0);
+  // Stile input condiviso
+  const INP=`font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1px solid transparent;border-radius:4px;padding:3px 5px;background:transparent;width:108px;text-align:center;outline:none;transition:all .15s;`;
+  const INP_TOT25=`${INP}color:var(--text3);`;
+  const INP_TGT=`${INP}color:var(--text);font-weight:700;`;
+
+  let html=`<table class="kpi-tbl"><thead><tr>
+    <th class="th-row"></th>
+    ${MESI.map((m,i)=>`<th class="${i===0?'col-sep':''}">${m}</th>`).join('')}
+  </tr></thead><tbody>`;
+
+  // ── Righe settimane (già editabili) ──
+  for(let s=0;s<5;s++){
+    html+=`<tr class="r-sett"><td class="td-row">Settimana ${s+1}</td>`;
+    for(let m=0;m<12;m++){
+      const v=kpi.settimane[s][m];
+      const dv=(v!=null&&v!==0)?v:'';
+      if(u==='€'){
+        const fmtV=dv!==''?fmtItEuro(parseFloat(dv)):'';
+        html+=`<td class="${m===0?'col-sep':''}"><div class="cell-wrap">
+            <span class="cell-eur">€</span>
+            <input type="text" inputmode="decimal" value="${fmtV}"
+              id="inp-${kpiId}-s${s}-m${m}"
+              onchange="onCellChg('${kpiId}',${s},${m},parseFmt(this.value))"
+              onfocus="this.value=this.value.replace(/\./g,'').replace(',','.')"
+              onblur="const nv=parseFmt(this.value);this.value=nv!=null?fmtItEuro(nv):'';"
+              style="width:78px;text-align:left;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1px solid transparent;border-radius:4px;padding:3px 4px;background:transparent;outline:none;transition:all .15s;"
+              placeholder="—">
+          </div></td>`;
+      } else {
+        html+=`<td class="${m===0?'col-sep':''}"><div class="cell-wrap">
+            <input type="number" step="any" value="${dv}"
+              id="inp-${kpiId}-s${s}-m${m}"
+              onchange="onCellChg('${kpiId}',${s},${m},this.value)"
+              placeholder="—">
+          </div></td>`;
+      }
+    }
+    html+=`</tr>`;
+  }
+
+  // ── Totale 2026 (calcolato, read-only visivo) ──
+  html+=`<tr class="r-tot26"><td class="td-row">Totale 2026</td>`;
+  kpi.tot2026.forEach((v,m)=>{
+    const tgt=kpi.target[m];
+    const val=(v===0&&!hasDatiMese(m))?null:v;
+    const cls=(val!=null&&val!==0)?(m<4?cellColorCls(kpi,v,tgt):'c-neu'):'c-neu';
+    html+=`<td class="${m===0?'col-sep ':''} ${cls}" id="tot26-${kpiId}-${m}">
+      ${val!=null&&val!==0?fmtNZ(val,u):'—'}</td>`;
+  });
+  html+=`</tr>`;
+
+  // ── Totale 2025 (editabile) ──
+  html+=`<tr class="r-tot25"><td class="td-row">Totale 2025</td>`;
+  kpi.tot2025.forEach((v,m)=>{
+    const dv=(v!=null&&v!==0)?v:'';
+    if(u==='€'){
+      const fmtT25=dv!==''?parseFloat(dv).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+      html+=`<td class="${m===0?'col-sep':''}"><div class="cell-wrap">
+          <span class="cell-eur">€</span>
+          <input type="text" inputmode="decimal" value="${fmtT25}"
+            id="tot25-${kpiId}-${m}"
+            onchange="onTot25Chg('${kpiId}',${m},parseFmt(this.value))"
+            onfocus="this.value=this.value.replace(/\./g,'').replace(',','.')"
+            onblur="const nv=parseFmt(this.value);this.value=nv!=null?fmtItEuro(nv):'';"
+            style="${INP_TOT25}width:78px;text-align:left;"
+            placeholder="—">
+        </div></td>`;
+    } else {
+      html+=`<td class="${m===0?'col-sep':''}">
+        <input type="number" step="any" value="${dv}"
+          id="tot25-${kpiId}-${m}"
+          onchange="onTot25Chg('${kpiId}',${m},this.value)"
+          style="${INP_TOT25}"
+          placeholder="—"></td>`;
+    }
+  });
+  html+=`</tr>`;
+
+  // ── Target KPI (editabile) ──
+  html+=`<tr class="r-target"><td class="td-row">Target KPI</td>`;
+  kpi.target.forEach((v,m)=>{
+    const dv=(v!=null&&v!==0)?Math.ceil(v):'';
+    if(u==='€'){
+      const fmtTgt=dv!==''?parseFloat(dv).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}):'';
+      html+=`<td class="${m===0?'col-sep':''}"><div class="cell-wrap">
+          <span class="cell-eur-tgt">€</span>
+          <input type="text" inputmode="decimal" value="${fmtTgt}"
+            id="tgt-${kpiId}-${m}"
+            onchange="onTgtChg('${kpiId}',${m},parseFmt(this.value))"
+            onfocus="this.value=this.value.replace(/\./g,'').replace(',','.')"
+            onblur="const nv=parseFmt(this.value);this.value=nv!=null?fmtItEuro(nv):'';"
+            style="${INP_TGT}width:78px;text-align:left;"
+            placeholder="—">
+        </div></td>`;
+    } else {
+      html+=`<td class="${m===0?'col-sep':''}">
+        <input type="number" step="any" value="${dv}"
+          id="tgt-${kpiId}-${m}"
+          onchange="onTgtChg('${kpiId}',${m},this.value)"
+          style="${INP_TGT}"
+          placeholder="—"></td>`;
+    }
+  });
+  html+=`</tr></tbody></table>`;
+  document.getElementById(containerId).innerHTML=html;
+}
+function buildAllKpiTables(){KS.forEach(k=>buildKpiTable('tbl-'+k,k));buildFornitori();}
+
+// Converte stringa formattata italiana (es "62.798,26") in float
+function parseFmt(s){
+  if(!s||s===''||s==='—')return null;
+  // Rimuove separatori migliaia (.) e converte , in .
+  const n=parseFloat(String(s).replace(/\./g,'').replace(',','.'));
+  return isNaN(n)?null:n;
+}
+// Formatta numero con separatore migliaia italiano e 2 decimali SEMPRE
+function fmtItEuro(n){
+  if(n==null||n===''||isNaN(parseFloat(n)))return '';
+  const v=parseFloat(n);
+  const parts=v.toFixed(2).split('.');
+  parts[0]=parts[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  return parts.join(',');
+}
+// Formatta numero con separatore migliaia senza decimali fissi
+function fmtItNum(n){
+  if(n==null||n===''||isNaN(parseFloat(n)))return '';
+  const v=parseFloat(n);
+  return String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+function fmtEuro(n){if(n==null||n===''||isNaN(parseFloat(n)))return '';return parseFloat(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtNum(n){if(n==null||n===''||isNaN(parseFloat(n)))return '';return parseFloat(n).toLocaleString('it-IT',{maximumFractionDigits:2});}
+
+function onTot25Chg(kpiId,m,val){
+  DB.acquisti.kpis[kpiId].tot2025[m]=val===''?null:parseFloat(val)||null;
+  // Aggiorna anche il riepilogo colonne se visibile
+  buildRiepilogoColumns();
+}
+function onTgtChg(kpiId,m,val){
+  // target è un getter per ordiniNum/ordiniVal — se viene editato, convertiamo in array statico
+  const kpi=DB.acquisti.kpis[kpiId];
+  // Rompi il getter e sostituisci con array statico la prima volta
+  if(typeof Object.getOwnPropertyDescriptor(kpi,'target').get !== 'undefined'){
+    const currentVals=[...kpi.target]; // materializza i valori attuali
+    Object.defineProperty(kpi,'target',{value:currentVals,writable:true,configurable:true});
+  }
+  kpi.target[m]=val===''?null:parseFloat(val)||0;
+  recalcTot(kpiId);
+  buildRiepilogoColumns();
+}
+function onCellChg(kpiId,s,m,val){DB.acquisti.kpis[kpiId].settimane[s][m]=val===''?null:parseFloat(val);recalcKpi(kpiId);}
+function recalcKpi(kpiId){recalcTot(kpiId);refreshAll();buildBudgetChart();}
+function recalcTot(kpiId){
+  const kpi=DB.acquisti.kpis[kpiId];
+  const hasDatiMese=(m)=>kpi.settimane.some(s=>s[m]!=null&&s[m]!==0);
+  for(let m=0;m<12;m++){
+    let tot=0;for(let s=0;s<5;s++){const v=kpi.settimane[s][m];if(v!=null)tot+=v;}
+    kpi.tot2026[m]=tot;
+    const el=document.getElementById(`tot26-${kpiId}-${m}`);
+    if(el){
+      const val=(tot===0&&!hasDatiMese(m))?null:tot;
+      const cls=(val!=null&&val!==0)?cellColorCls(kpi,tot,kpi.target[m]):'c-neu';
+      el.textContent=(val!=null&&val!==0)?fmtNZ(val,kpi.unit):'—';
+      el.className=`${m===0?'col-sep ':''} ${cls}`;
+    }
+  }
+  autoSave();
+}
+
+// ═══ FORNITORI — tabella completa (auto-aggiornata dall'inserimento rapido) ═══
+
+// ═══ TABELLA RIEPILOGATIVA CONTESTAZIONI ═══
+
+// Mini-tabella contestazioni nella colonna 3 del riepilogo
+function buildRcContestazioniTable(){
+  const wrap=document.getElementById('rc-tbl-contestazioni');if(!wrap)return;
+  const{lista,dati}=DB.acquisti.fornitori;
+  if(!lista.length){wrap.innerHTML='<p style="font-size:11px;color:var(--text3);padding:8px">Nessun fornitore registrato.</p>';return;}
+  const MESI_B=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+  let html=`<table style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:10.5px;">
+    <thead><tr style="background:var(--surf2)">
+      <th style="text-align:left;padding:6px 10px;border-bottom:1.5px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;white-space:nowrap">Fornitore</th>
+      ${MESI_B.map(m=>`<th style="text-align:center;padding:6px 3px;border-bottom:1.5px solid var(--border2);font-size:8.5px;font-weight:700;color:var(--text3);text-transform:uppercase">${m}</th>`).join('')}
+      <th style="text-align:right;padding:6px 10px;border-bottom:1.5px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;background:var(--surf3)">€ Totale</th>
+    </tr></thead>
+    <tbody>`;
+  lista.forEach((f,fi)=>{
+    const vals=fornValori(f);
+    const totV=vals.reduce((a,v)=>a+(v||0),0);
+    const bg=fi%2===0?'#fff':'var(--surf2)';
+    html+=`<tr style="background:${bg}">
+      <td style="padding:5px 10px;border-bottom:1px solid var(--border);font-weight:700;font-size:11px;color:var(--text);white-space:nowrap">
+        ${f}
+        <div style="display:flex;gap:4px;margin-top:2px">
+          <button onclick="editFornitore('${f}')" style="font-size:8px;font-weight:700;padding:1px 5px;border:1px solid var(--border2);border-radius:3px;background:transparent;cursor:pointer;color:var(--text3)">✏</button>
+          <button onclick="delFornitore('${f}')" style="font-size:8px;font-weight:700;padding:1px 5px;border:1px solid rgba(239,68,68,0.3);border-radius:3px;background:transparent;cursor:pointer;color:#dc2626">✕</button>
+        </div>
+      </td>
+      ${vals.map((v,m)=>`<td style="text-align:center;padding:5px 2px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:${v&&v>0?'var(--accent)':'var(--text3)'}">${v&&v>0?'€ '+fmtItEuro(v):'—'}</div>
+      </td>`).join('')}
+      <td style="text-align:right;padding:5px 10px;border-bottom:1px solid var(--border);border-left:1.5px solid var(--border2);background:var(--surf3);font-weight:800;font-size:11px;color:${totV>0?'var(--accent)':'var(--text3)'}">${totV>0?'€ '+fmtItEuro(totV):'—'}</td>
+    </tr>`;
+  });
+  // Riga totale
+  const totVGlobal=lista.reduce((a,f)=>a+fornValori(f).reduce((b,v)=>b+(v||0),0),0);
+  html+=`<tr style="background:var(--surf2)">
+    <td style="padding:7px 10px;font-weight:800;font-size:11px;color:var(--text);border-top:2px solid var(--border2)">TOTALE</td>
+    ${Array(12).fill('').map((_,m)=>{
+      const vTot=lista.reduce((a,f)=>a+(fornValori(f)[m]||0),0);
+      return`<td style="text-align:center;padding:5px 2px;border-top:2px solid var(--border2);border-left:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:800;color:${vTot>0?'var(--accent)':'var(--text3)'}">${vTot>0?'€ '+fmtItEuro(vTot):'—'}</div>
+      </td>`;
+    }).join('')}
+    <td style="text-align:right;padding:7px 10px;border-top:2px solid var(--border2);border-left:1.5px solid var(--border2);background:var(--surf3);font-weight:800;font-size:12px;color:${totVGlobal>0?'var(--accent)':'var(--text3)'}">${totVGlobal>0?'€ '+fmtItEuro(totVGlobal):'—'}</td>
+  </tr>`;
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+function buildContestazioniTable(){
+  const wrap=document.getElementById('tbl-contestazioni-wrap');if(!wrap)return;
+  const{lista,dati}=DB.acquisti.fornitori;
+  if(!lista.length){wrap.innerHTML='<p style="font-size:12px;color:var(--text3)">Nessun fornitore in rubrica.</p>';return;}
+
+  const MESI_BREVI=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+  let html=`<table style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:11px;">
+    <thead>
+      <tr style="background:var(--surf2);">
+        <th style="text-align:left;padding:9px 12px;border-bottom:1.5px solid var(--border2);font-weight:700;color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:.8px;white-space:nowrap;min-width:160px">Ragione Sociale</th>
+        ${MESI_BREVI.map(m=>`<th style="text-align:center;padding:9px 6px;border-bottom:1.5px solid var(--border2);font-weight:700;color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:.5px">${m}</th>`).join('')}
+        <th style="text-align:right;padding:9px 12px;border-bottom:1.5px solid var(--border2);font-weight:700;color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:.5px;background:var(--surf3)">Tot. N°</th>
+        <th style="text-align:right;padding:9px 12px;border-bottom:1.5px solid var(--border2);font-weight:700;color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:.5px;background:var(--surf3)">Tot. €</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  lista.forEach((f,fi)=>{
+    const cont=fornContest(f);
+    const vals=fornValori(f);
+    const totN=cont.reduce((a,v)=>a+(v||0),0);
+    const totV=vals.reduce((a,v)=>a+(v||0),0);
+    const bg=fi%2===0?'#fff':'var(--surf2)';
+
+    // Riga N° contestazioni
+    html+=`<tr style="background:${bg}">
+      <td style="padding:7px 12px;border-bottom:1px solid var(--border);font-weight:700;color:var(--text);vertical-align:middle" rowspan="2">
+        <div style="font-size:12px;font-weight:700;color:var(--text)">${f.length>24?f.substring(0,24)+'.':f}</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button onclick="editFornitore('${f}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border:1px solid var(--border2);border-radius:4px;background:transparent;cursor:pointer;color:var(--text3)">✏ Modifica</button>
+          <button onclick="delFornitore('${f}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;padding:2px 7px;border:1px solid rgba(239,68,68,0.3);border-radius:4px;background:transparent;cursor:pointer;color:#dc2626">✕ Elimina</button>
+        </div>
+      </td>
+      ${cont.map((v,m)=>`<td style="text-align:center;padding:6px 4px;border-bottom:1px solid var(--border);border-left:1px solid var(--border)">
+        <input type="number" step="1" min="0" value="${v!=null&&v!==0?v:''}" placeholder="—"
+          id="ct-n-${f.replace(/[^a-zA-Z0-9]/g,'_')}-${m}"
+          onchange="onContestChg('${f}',${m},'n',this.value)"
+          style="font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;border:1px solid transparent;border-radius:3px;padding:2px 3px;background:transparent;width:40px;text-align:center;outline:none;color:${v&&v>0?'var(--red)':'var(--text3)'}">
+      </td>`).join('')}
+      <td style="text-align:right;padding:6px 10px;border-bottom:1px solid var(--border);border-left:1.5px solid var(--border2);background:var(--surf3);font-weight:800;font-size:12px;color:${totN>0?'var(--red)':'var(--text3)'}">${totN||'—'}</td>
+      <td style="text-align:right;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--surf3);font-weight:700;font-size:11px;color:var(--text3)" rowspan="2">
+        <span style="font-size:12px;font-weight:800;color:${totV>0?'var(--accent)':'var(--text3)'}">${totV>0?'€ '+fmtItEuro(totV):'—'}</span>
+      </td>
+    </tr>`;
+
+    // Riga valori €
+    html+=`<tr style="background:${bg}">
+      ${vals.map((v,m)=>`<td style="text-align:center;padding:4px 4px 7px;border-bottom:1.5px solid var(--border2);border-left:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:1px">
+          ${v!=null&&v!==0?'<span style="font-size:9px;color:var(--text3)">€</span>':''}
+          <input type="text" inputmode="decimal" value="${v!=null&&v!==0?fmtItEuro(v):''}" placeholder="—"
+            id="ct-v-${f.replace(/[^a-zA-Z0-9]/g,'_')}-${m}"
+            onchange="onContestChg('${f}',${m},'v',parseFmt(this.value))"
+            onfocus="const r=parseFmt(this.value);this.value=r!=null?r:'';"
+            onblur="const n=parseFmt(this.value);this.value=n!=null?fmtItEuro(n):'';saveRcForn();autoSave();"
+            style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;border:1px solid transparent;border-radius:3px;padding:2px 3px;background:transparent;width:56px;text-align:center;outline:none;color:${v&&v>0?'var(--accent)':'var(--text3)'}">
+        </div>
+      </td>`).join('')}
+      <td style="text-align:right;padding:4px 10px 7px;border-bottom:1.5px solid var(--border2);border-left:1.5px solid var(--border2);background:var(--surf3);font-size:10px;color:var(--text3)">€ —</td>
+    </tr>`;
+  });
+
+  // Riga totali
+  const totNGlobal=lista.reduce((a,f)=>a+fornContest(f).reduce((b,v)=>b+(v||0),0),0);
+  const totVGlobal=lista.reduce((a,f)=>a+fornValori(f).reduce((b,v)=>b+(v||0),0),0);
+  html+=`<tr style="background:var(--surf2)">
+    <td style="padding:9px 12px;font-weight:800;font-size:12px;color:var(--text);border-top:2px solid var(--border2)">TOTALE</td>
+    ${Array(12).fill('').map((_,m)=>{
+      const nTot=lista.reduce((a,f)=>a+(fornContest(f)[m]||0),0);
+      const vTot=lista.reduce((a,f)=>a+(fornValori(f)[m]||0),0);
+      return`<td style="text-align:center;padding:7px 4px;border-top:2px solid var(--border2);border-left:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:800;color:${nTot>0?'var(--red)':'var(--text3)'}">${nTot||'—'}</div>
+        <div style="font-size:9px;color:${vTot>0?'var(--accent)':'var(--text3);opacity:.5'};margin-top:2px">${vTot>0?'€ '+fmtItEuro(vTot):'—'}</div>
+      </td>`;
+    }).join('')}
+    <td style="text-align:right;padding:9px 10px;border-top:2px solid var(--border2);border-left:1.5px solid var(--border2);background:var(--surf3);font-weight:800;font-size:13px;color:${totNGlobal>0?'var(--red)':'var(--text3)'}">${totNGlobal||'—'}</td>
+    <td style="text-align:right;padding:9px 10px;border-top:2px solid var(--border2);background:var(--surf3);font-weight:800;font-size:12px;color:${totVGlobal>0?'var(--accent)':'var(--text3)'}">${totVGlobal>0?'€ '+fmtItEuro(totVGlobal):'—'}</td>
+  </tr>`;
+
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+// Handler modifica dati contestazioni
+function onContestChg(f,m,tipo,val){
+  ensureFornObj(f);
+  const n=parseFloat(val)||null;
+  if(tipo==='n') DB.acquisti.fornitori.dati[f].contestazioni[m]=n;
+  else           DB.acquisti.fornitori.dati[f].valori[m]=n;
+  buildContestazioniTable();
+  buildForniChart();buildRiepilogoColumns();
+}
+
+function buildFornitori(){
+  const wrap=document.getElementById('tbl-fornitori');if(!wrap)return;
+  const{lista,dati}=DB.acquisti.fornitori;
+  const sorted=[...lista].sort((a,b)=>dati[b].reduce((s,v)=>s+(v||0),0)-dati[a].reduce((s,v)=>s+(v||0),0));
+  let html=`<table class="kpi-tbl"><thead><tr><th class="th-row">Fornitore</th>${MESI.map((m,i)=>`<th class="${i===0?'col-sep':''}">${m}</th>`).join('')}<th>Totale</th><th>Rank</th></tr></thead><tbody>`;
+  sorted.forEach((f,idx)=>{
+    const d=dati[f]||Array(12).fill(null);const tot=d.reduce((a,v)=>a+(v||0),0);
+    const rankCls=tot===0?'forn-rank-ok':idx===0?'forn-rank-1':idx===1?'forn-rank-2':idx===2?'forn-rank-3':'';
+    const rankLbl=tot===0?'✓ OK':idx===0?'🔴 1°':idx===1?'🟠 2°':idx===2?'🟡 3°':'⚠';
+    html+=`<tr><td class="td-row">${f}</td>`;
+    d.forEach((v,i)=>{const hasV=v!=null&&v>0;html+=`<td class="${i===0?'col-sep':''}"><input type="number" step="any" value="${hasV?v:''}" id="forn-${f.replace(/\W/g,'_')}-${i}" onchange="onFornChg('${f}',${i},this.value)" ${hasV?`style="color:var(--red);font-weight:700"`:''} placeholder="—"></td>`;});
+    html+=`<td style="font-weight:800;color:${tot>0?'var(--red)':'#84cc16'}">${tot>0?tot:'0'}</td><td class="${rankCls}" style="font-weight:700;font-size:11px">${rankLbl}</td></tr>`;
+  });
+  html+=`</tbody></table>`;wrap.innerHTML=html;
+}
+
+function onFornChg(f,m,val){
+  DB.acquisti.fornitori.dati[f][m]=val===''?null:parseFloat(val);
+  const d=DB.acquisti.fornitori.dati[f];const tot=d.reduce((a,v)=>a+(v||0),0);
+  const key=f.replace(/\W/g,'_');const el=document.getElementById(`forn-tot-${key}`);
+  if(el){el.textContent=tot>0?tot:'0';el.style.color=tot>0?'var(--red)':'#84cc16';}
+  buildForniChart();buildRiepilogoColumns();
+}
+
+// ═══ RUBRICA FORNITORI con elimina ═══
+function buildRubrica(){
+  const wrap=document.getElementById('forn-rubrica');if(!wrap)return;
+  const{lista}=DB.acquisti.fornitori;
+  if(!lista.length){wrap.innerHTML='<span style="font-size:11px;color:var(--text3)">Nessun fornitore in rubrica.</span>';return;}
+  wrap.innerHTML=lista.map(f=>`
+    <div style="display:flex;align-items:center;gap:5px;background:var(--surf3);border:1px solid var(--border2);border-radius:6px;padding:5px 8px 5px 12px;">
+      <span id="rub-lbl-${f.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:11px;font-weight:700;color:var(--text)">${f}</span>
+      <button onclick="editFornitore('${f}')" title="Modifica nome"
+        style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;line-height:1;padding:1px 4px;border-radius:3px;transition:all .12s"
+        onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text3)'">✏</button>
+      <button onclick="delFornitore('${f}')" title="Elimina ${f}"
+        style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;line-height:1;padding:1px 4px;border-radius:3px;transition:all .12s"
+        onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--text3)'">✕</button>
+    </div>`).join('');
+}
+
+function editFornitore(vecchioNome){
+  const nuovoNome=prompt(`Modifica nome fornitore:`,vecchioNome);
+  if(!nuovoNome||!nuovoNome.trim()||nuovoNome.trim()===vecchioNome)return;
+  const n=nuovoNome.trim();
+  if(DB.acquisti.fornitori.lista.includes(n)){alert('Nome già presente in rubrica.');return;}
+  // Rinomina mantenendo i dati
+  const idx=DB.acquisti.fornitori.lista.indexOf(vecchioNome);
+  DB.acquisti.fornitori.lista[idx]=n;
+  DB.acquisti.fornitori.dati[n]={...DB.acquisti.fornitori.dati[vecchioNome]};
+  delete DB.acquisti.fornitori.dati[vecchioNome];
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+}
+function delFornitore(f){
+  if(!confirm(`Eliminare il fornitore "${f}" e tutti i suoi dati?`))return;
+  DB.acquisti.fornitori.lista=DB.acquisti.fornitori.lista.filter(x=>x!==f);
+  delete DB.acquisti.fornitori.dati[f];
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+}
+// Elimina direttamente dalla colonna Riepilogo (con confirm sintetico)
+function delFornitoreInline(f){
+  if(!confirm(`Eliminare "${f}"?`))return;
+  DB.acquisti.fornitori.lista=DB.acquisti.fornitori.lista.filter(x=>x!==f);
+  delete DB.acquisti.fornitori.dati[f];
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+}
+
+// ═══ FORM INSERIMENTO SINGOLO ═══
+function onFornSelChange(){
+  // Mantenuta per retrocompatibilità con la colonna riepilogo
+  const sel=document.getElementById('forn-sel')?.value;
+  const wrap=document.getElementById('forn-new-wrap');
+  if(wrap)wrap.style.display=sel==='__new__'?'flex':'none';
+  if(sel&&sel!=='__new__'){
+    const m=parseInt(document.getElementById('forn-mese-ins')?.value||'0');
+    const v=DB.acquisti.fornitori.dati[sel]?.[m];
+    const qty=document.getElementById('forn-qty');
+    if(qty)qty.value=v!=null&&v!==0?v:'';
+  }
+}
+
+// Form inline nella colonna 5 del riepilogo
+function syncFornAc(val){
+  const qty=document.getElementById('rc-forn-qty');
+  if(val==='__new__'){
+    // Apre prompt per aggiungere nuovo fornitore
+    const nome=prompt('Nome nuovo fornitore:');
+    if(nome&&nome.trim()){
+      const n=nome.trim();
+      if(!DB.acquisti.fornitori.lista.includes(n)){
+        DB.acquisti.fornitori.lista.push(n);
+        DB.acquisti.fornitori.dati[n]={contestazioni:Array(12).fill(null),valori:Array(12).fill(null)};
+        refreshFornSel();buildRubrica();
+        // Ricostruisce le opzioni del select colonna
+        buildRiepilogoColumns();
+        // Riseleziona il nuovo fornitore
+        setTimeout(()=>{
+          const sel=document.getElementById('rc-forn-ac');
+          if(sel)sel.value=n;
+        },50);
+      }
+    } else {
+      // Reset a voce vuota se annulla
+      const sel=document.getElementById('rc-forn-ac');
+      if(sel)sel.value='';
+    }
+    return;
+  }
+  // Precompila qty se fornitore selezionato
+  if(val&&val!==''){
+    const m=parseInt(document.getElementById('rc-forn-mese')?.value||'0');
+    const v=DB.acquisti.fornitori.dati[val]?.[m];
+    if(qty&&v!=null&&v!==0)qty.value=v;
+    else if(qty)qty.value='';
+  }
+}
+function saveRcForn(){
+  const sel=document.getElementById('rc-forn-ac');
+  const raw=sel?.value?.trim();
+  if(!raw||raw==='__new__'){alert('Seleziona un fornitore.');return;}
+  const mese=parseInt(document.getElementById('rc-forn-mese')?.value||'0');
+  const qty=parseFloat(document.getElementById('rc-forn-qty')?.value||'0');
+  if(!DB.acquisti.fornitori.lista.includes(raw)){
+    DB.acquisti.fornitori.lista.push(raw);
+    DB.acquisti.fornitori.dati[raw]={contestazioni:Array(12).fill(null),valori:Array(12).fill(null)};
+  }
+  ensureFornObj(raw);
+  DB.acquisti.fornitori.dati[raw].contestazioni[mese]=qty||null;
+  const rcVal=parseFmt(document.getElementById('rc-forn-valore')?.value||'')||null;
+  DB.acquisti.fornitori.dati[raw].valori[mese]=rcVal;
+  const ac=document.getElementById('forn-autocomplete');if(ac)ac.value=raw;
+  const fm=document.getElementById('forn-mese-ins');if(fm)fm.value=mese;
+  const fq=document.getElementById('forn-qty');if(fq)fq.value=qty;
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+  document.getElementById('lastSave').textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+}
+function resetRcForn(){
+  const sel=document.getElementById('rc-forn-ac');if(sel)sel.value='';
+  const qty=document.getElementById('rc-forn-qty');if(qty)qty.value='';
+  const val=document.getElementById('rc-forn-valore');if(val)val.value='';
+}
+function onFornAutocomplete(val){
+  const badge=document.getElementById('forn-match-badge');
+  const isInRubrica=DB.acquisti.fornitori.lista.includes(val.trim());
+  if(badge)badge.style.display=isInRubrica?'block':'none';
+  // Se è in rubrica, precompila la quantità del mese selezionato
+  if(isInRubrica){
+    const m=parseInt(document.getElementById('forn-mese-ins')?.value||'0');
+    const v=DB.acquisti.fornitori.dati[val.trim()]?.[m];
+    const qty=document.getElementById('forn-qty');
+    if(qty&&(v!=null&&v!==0))qty.value=v;
+  }
+}
+function refreshFornSel(){
+  // Aggiorna il datalist per autocomplete
+  const dl=document.getElementById('forn-datalist');
+  if(dl){
+    dl.innerHTML='';
+    DB.acquisti.fornitori.lista.forEach(f=>{
+      const o=document.createElement('option');o.value=f;dl.appendChild(o);
+    });
+  }
+  // Aggiorna select nella colonna riepilogo (se presente)
+  const sel=document.getElementById('forn-sel');if(!sel)return;
+  const curr=sel.value;
+  sel.innerHTML='<option value="__new__">+ Nuovo fornitore...</option>';
+  DB.acquisti.fornitori.lista.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+  if(curr&&curr!=='__new__'&&DB.acquisti.fornitori.lista.includes(curr))sel.value=curr;
+}
+function saveFornSingle(){
+  const raw=document.getElementById('forn-autocomplete')?.value?.trim();
+  if(!raw){alert('Inserisci o seleziona il nome del fornitore.');return;}
+  const mese=parseInt(document.getElementById('forn-mese-ins')?.value||'0');
+  const qty=parseFloat(document.getElementById('forn-qty')?.value||'0');
+  const val=parseFmt(document.getElementById('forn-valore-ins')?.value||'')||null;
+  if(!DB.acquisti.fornitori.lista.includes(raw)){
+    DB.acquisti.fornitori.lista.push(raw);
+    DB.acquisti.fornitori.dati[raw]={contestazioni:Array(12).fill(null),valori:Array(12).fill(null)};
+  }
+  ensureFornObj(raw);
+  DB.acquisti.fornitori.dati[raw].contestazioni[mese]=qty||null;
+  const rcVal=parseFmt(document.getElementById('rc-forn-valore')?.value||'')||null;
+  DB.acquisti.fornitori.dati[raw].valori[mese]=rcVal;
+  DB.acquisti.fornitori.dati[raw].valori[mese]=val;
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+  document.getElementById('lastSave').textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  resetFornForm();
+}
+function resetFornForm(){
+  const ac=document.getElementById('forn-autocomplete');if(ac)ac.value='';
+  const qty=document.getElementById('forn-qty');if(qty)qty.value='';
+  const val=document.getElementById('forn-valore-ins');if(val)val.value='';
+  const badge=document.getElementById('forn-match-badge');if(badge)badge.style.display='none';
+  // Reset anche forn-sel per colonna riepilogo
+  const sel=document.getElementById('forn-sel');
+  if(sel&&DB.acquisti.fornitori.lista.length)sel.value=DB.acquisti.fornitori.lista[0];
+  else if(sel)sel.value='__new__';
+  const wrap=document.getElementById('forn-new-wrap');if(wrap)wrap.style.display='none';
+}
+function addFornitoreGlobal(){
+  const nome=prompt('Nome del fornitore:');if(!nome||!nome.trim())return;
+  const n=nome.trim();
+  if(DB.acquisti.fornitori.lista.includes(n)){alert('Fornitore già presente.');return;}
+  DB.acquisti.fornitori.lista.push(n);DB.acquisti.fornitori.dati[n]={contestazioni:Array(12).fill(null),valori:Array(12).fill(null)};
+  refreshFornSel();buildRubrica();buildFornitori();buildForniChart();buildSegnTable();buildSegnFornTable();buildRiepilogoColumns();buildContestazioniTable();autoSave();
+}
+
+// ═══ CRUSCOTTO CARDS ═══
+function buildCruscottoCards(){
+  const wrap=document.getElementById('cruscotto-cards');if(!wrap)return;
+  let html='';
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];const v26=ytd4(kpi.tot2026),tgt=ytd4(kpi.target);
+    const s=st(kpi,v26,tgt);const col=stColor(s);
+    const pct=Math.min(100,Math.max(0,gaugeForLower(v26,tgt)));
+    html+=`<div class="sc" style="cursor:pointer" onclick="nav('acquisti',document.querySelector('[data-v=acquisti]'))">
+      <div class="sc-label">${kpi.icon} ${kpi.label}</div>
+      <div class="sc-val" style="color:${col};font-size:${kpi.unit==='€'?'18px':'22px'}">${fmtK(v26,kpi.unit)}</div>
+      <div class="sc-sub">YTD 2026 · Target: ${fmtK(tgt,kpi.unit)}</div>
+      <div class="sc-badge ${stBadge(s)}">${stLabel(s)}</div>
+      <div style="height:4px;background:var(--surf4);border-radius:4px;overflow:hidden;margin-top:10px"><div style="height:100%;width:${pct}%;background:${col};border-radius:4px;transition:width .6s"></div></div>
+    </div>`;
+  });
+  wrap.innerHTML=html;
+}
+
+// ═══ GRAFICI ═══
+
+// ═══ GRAFICO SEGNALAZIONI FORNITORI UNIFICATO ═══
+
+// ═══ TABELLA INTERATTIVA SEGNALAZIONI FORNITORI ═══
+const SEGN_COLORS=['#6366f1','#ef4444','#f59e0b','#10b981','#3b82f6','#ec4899','#8b5cf6','#06b6d4'];
+const MESI_B=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+
+
+// ═══ TABELLA SEGNALAZIONI FORNITORI ═══
+function buildSegnFornTable(){
+  const wrap=document.getElementById('tbl-segn-forn');
+  if(!wrap)return;
+  const{lista}=DB.acquisti.fornitori;
+
+  const MESI_FULL=['GENNAIO','FEBBRAIO','MARZO','APRILE','MAGGIO','GIUGNO',
+                   'LUGLIO','AGOSTO','SETTEMBRE','OTTOBRE','NOVEMBRE','DICEMBRE'];
+
+  const totConMese=Array(12).fill(0).map((_,m)=>lista.reduce((a,f)=>a+(fornContest(f)[m]||0),0));
+  const totValMese=Array(12).fill(0).map((_,m)=>lista.reduce((a,f)=>a+(fornValori(f)[m]||0),0));
+
+  // Stile cella identico a kpi-tbl
+  const cellStyle=`font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;
+    border:1px solid transparent;border-radius:4px;padding:2px 4px;background:transparent;
+    width:88px;text-align:center;outline:none;transition:all .15s;display:block;margin:0 auto;`;
+
+  let html=`<table class="kpi-tbl">
+    <thead>
+      <tr>
+        <th class="th-row">FORNITORE</th>
+        ${MESI_FULL.map(m=>`<th>${m}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>`;
+
+  if(!lista.length){
+    html+=`<tr><td class="td-row" style="color:var(--text3);font-style:italic">Nessun fornitore — aggiungerne uno dal riepilogo</td>${Array(12).fill('<td style="text-align:center">—</td>').join('')}</tr>`;
+  }
+
+  const COLORS=['#6366f1','#ef4444','#f59e0b','#10b981','#3b82f6','#ec4899','#8b5cf6','#06b6d4'];
+
+  lista.forEach((f,fi)=>{
+    const cont=fornContest(f);
+    const vals=fornValori(f);
+    const col=COLORS[fi%COLORS.length];
+    const fk=f.replace(/[^a-zA-Z0-9]/g,'_');
+    // Totali riga
+    const totN=cont.reduce((a,v)=>a+(v||0),0);
+    const totV=vals.reduce((a,v)=>a+(v||0),0);
+
+    html+=`<tr class="r-sett">
+      <td class="td-row" style="vertical-align:middle;padding:6px 12px 6px 0px">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px">${f.length>24?f.substring(0,24)+'.':f}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:2px">
+          <span style="font-size:10px;font-weight:700;color:${totN>0?'var(--text2)':'var(--text3)'}">
+            ${totN>0?totN+' segn.':'0 segn.'}
+          </span>
+          <span style="font-size:10px;color:var(--text3)">|</span>
+          <span style="font-size:10px;font-weight:700;color:${totV>0?'var(--text2)':'var(--text3)'}">
+            ${totV>0?'€ '+fmtItEuro(totV):'€ 0,00'}
+          </span>
+        </div>
+      </td>`;
+
+    for(let m=0;m<12;m++){
+      const n=cont[m]||0;
+      const v=vals[m]||0;
+      const hasN=n>0;const hasV=v>0;
+      const fk2=`${fk}-${m}`;
+      html+=`<td style="padding:0;vertical-align:middle;text-align:center">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:54px;gap:0">
+          <input type="number" step="1" min="0"
+            id="sfn-${fk2}" value="${hasN?n:''}" placeholder="—"
+            style="${cellStyle}color:${hasN?'var(--text2)':'var(--text3)'};font-weight:${hasN?700:600};"
+            onchange="onSFNConChg('${f}',${m},this.value?parseInt(this.value):null)"
+            onfocus="this.style.borderColor='var(--accent)';this.style.background='#fff'"
+            onblur="this.style.borderColor='transparent';this.style.background='transparent'"
+            onkeydown="if(event.key==='Enter')this.blur();">
+          <div style="width:70%;height:1px;background:var(--border);margin:2px auto"></div>
+          <input type="text" inputmode="decimal"
+            id="sfv-${fk2}" value="${hasV?'€ '+fmtItEuro(v):''}" placeholder="—"
+            style="${cellStyle}font-size:11px;color:${hasV?'var(--text2)':'var(--text3)'};font-weight:${hasV?700:600};"
+            onfocus="const r=parseFmt(this.value);this.value=r!=null?r:'';this.style.borderColor='var(--accent)';this.style.background='#fff'"
+            onblur="const n=parseFmt(this.value);onSFNValChg('${f}',${m},n);this.value=n!=null?'€ '+fmtItEuro(n):'';this.style.borderColor='transparent';this.style.background='transparent';this.style.color=n&&n>0?'var(--text2)':'var(--text3)'"
+            onkeydown="if(event.key==='Enter')this.blur();">
+        </div>
+      </td>`;
+    }
+    html+=`</tr>`;
+  });
+
+  // Riga TOTALE 2026
+  html+=`<tr class="r-tot26">
+    <td class="td-row">Totale 2026</td>`;
+  for(let m=0;m<12;m++){
+    const hasN=totConMese[m]>0;const hasV=totValMese[m]>0;
+    html+=`<td style="padding:0;text-align:center;vertical-align:middle">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:54px;gap:0">
+        <span style="font-size:12px;font-weight:800;color:${hasN?'var(--red)':'var(--text3)'}">
+          ${hasN?totConMese[m]:'—'}
+        </span>
+        <div style="width:70%;height:1px;background:var(--border);margin:2px auto"></div>
+        <span style="font-size:11px;font-weight:700;color:${hasV?'var(--accent)':'var(--text3)'}">
+          ${hasV?'€ '+fmtItEuro(totValMese[m]):'—'}
+        </span>
+      </div>
+    </td>`;
+  }
+  html+=`</tr></tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+function onSFNConChg(f,m,val){
+  ensureFornObj(f);
+  DB.acquisti.fornitori.dati[f].contestazioni[m]=val;
+  buildSegnFornTable();buildRiepilogoColumns();
+  autoSave();
+}
+function onSFNValChg(f,m,val){
+  ensureFornObj(f);
+  DB.acquisti.fornitori.dati[f].valori[m]=val;
+  buildSegnFornTable();buildRiepilogoColumns();
+  autoSave();
+}
+
+function buildSegnTable(){
+  const wrap=document.getElementById('segn-table-wrap');if(!wrap)return;
+  const{lista}=DB.acquisti.fornitori;
+
+  if(!lista.length){
+    wrap.innerHTML='<p style="font-size:11px;color:var(--text3);padding:8px 0">Nessun fornitore registrato. Aggiungi un fornitore dalla sezione in alto.</p>';
+    return;
+  }
+
+  // Calcola totali per fornitore e per mese
+  const totPerForn=lista.map(f=>fornValori(f).reduce((a,v)=>a+(v||0),0));
+  const totPerMese=Array(12).fill(0).map((_,m)=>lista.reduce((a,f)=>a+(fornValori(f)[m]||0),0));
+  const totGlobale=totPerForn.reduce((a,v)=>a+v,0);
+  const maxVal=Math.max(...totPerForn,...totPerMese,1);
+
+  let html=`<table class="segn-tbl">
+    <thead><tr>
+      <th style="text-align:left">Fornitore</th>
+      ${MESI_B.map(m=>`<th style="text-align:center">${m}</th>`).join('')}
+      <th style="text-align:right;background:var(--surf3);border-left:2px solid var(--border2)">Totale €</th>
+    </tr></thead>
+    <tbody>`;
+
+  lista.forEach((f,fi)=>{
+    const col=SEGN_COLORS[fi%SEGN_COLORS.length];
+    const vals=fornValori(f);
+    const cont=fornContest(f);
+    const totF=totPerForn[fi];
+    const fk=f.replace(/[^a-zA-Z0-9]/g,'_');
+
+    html+=`<tr>
+      <td class="forn-lbl">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+          ${f}
+        </div>
+        <div style="display:flex;gap:4px;margin-top:3px;margin-left:17px">
+          <button onclick="editFornitore('${f}')" style="font-size:8px;padding:1px 5px;border:1px solid var(--border2);border-radius:3px;background:transparent;cursor:pointer;color:var(--text3)">✏</button>
+          <button onclick="delFornitore('${f}')" style="font-size:8px;padding:1px 5px;border:1px solid rgba(239,68,68,0.3);border-radius:3px;background:transparent;cursor:pointer;color:#dc2626">✕</button>
+        </div>
+      </td>`;
+
+    vals.forEach((v,m)=>{
+      const n=cont[m]||0;
+      const hasV=v!=null&&v>0;
+      const hasN=n>0;
+      const dotSize=hasV?Math.max(8,Math.min(20,Math.round(8+(v/maxVal)*12))):8;
+      const fmtV=hasV?fmtItEuro(v):'';
+      html+=`<td style="text-align:center">
+        <div class="segn-cell-wrap" title="${f} — ${MESI_B[m]}">
+          <div class="segn-dot" style="width:${dotSize}px;height:${dotSize}px;background:${hasV?col+'cc':'#e5e7eb'};box-shadow:${hasV?`0 0 6px ${col}55`:none}"></div>
+          <input type="text" inputmode="decimal" class="segn-inp${hasV?' has-val':''}"
+            value="${fmtV}"
+            id="si-${fk}-${m}"
+            placeholder="—"
+            onfocus="const r=parseFmt(this.value);this.value=r!=null?r:'';"
+            onblur="const n=parseFmt(this.value);const fmtd=n!=null?fmtItEuro(n):'';this.value=fmtd;onSegnValChg('${f}',${m},n);"
+            onkeydown="if(event.key==='Enter'){const n=parseFmt(this.value);onSegnValChg('${f}',${m},n);this.blur();}">
+          ${hasN?`<div style="font-size:8px;font-weight:700;color:${col};margin-top:1px">${n} segn.</div>`:''}
+        </div>
+      </td>`;
+    });
+
+    html+=`<td class="tot-cell" style="color:${totF>0?col:'var(--text3)'}">${totF>0?'€ '+fmtItEuro(totF):'—'}</td>`;
+    html+=`</tr>`;
+  });
+
+  // Riga TOTALE
+  html+=`<tr>
+    <td class="tot-row" style="color:var(--text)">📊 TOTALE</td>
+    ${totPerMese.map((tot,m)=>`<td class="tot-row" style="text-align:center;font-size:11px;color:${tot>0?'var(--accent)':'var(--text3)'}">
+      ${tot>0?'€ '+fmtItEuro(tot):'—'}
+    </td>`).join('')}
+    <td class="tot-row" style="text-align:right;color:${totGlobale>0?'var(--accent)':'var(--text3)'};border-left:2px solid var(--border2);font-size:13px">
+      ${totGlobale>0?'€ '+fmtItEuro(totGlobale):'—'}
+    </td>
+  </tr>`;
+
+  html+=`</tbody></table>`;
+  wrap.innerHTML=html;
+}
+
+function onSegnValChg(f,m,val){
+  ensureFornObj(f);
+  DB.acquisti.fornitori.dati[f].valori[m]=val;
+  buildSegnTable();
+  buildRiepilogoColumns();
+}
+
+function buildSegnChart(){
+  if(chartReg['ch-segnalazioni']){chartReg['ch-segnalazioni'].destroy();delete chartReg['ch-segnalazioni'];}
+  const ctx=document.getElementById('ch-segnalazioni')?.getContext('2d');if(!ctx)return;
+  const{lista,dati}=DB.acquisti.fornitori;
+
+  // Colori per fornitori
+  const FORN_COLORS=['#6366f1','#ef4444','#f59e0b','#10b981','#3b82f6','#ec4899','#8b5cf6'];
+  
+  // Dataset per ogni fornitore: barre € (asse sinistro) + linea N° (asse destro)
+  const datasets=[];
+  lista.forEach((f,fi)=>{
+    const col=FORN_COLORS[fi%FORN_COLORS.length];
+    const vals=fornValori(f);
+    const cont=fornContest(f);
+    // Barre importo €
+    datasets.push({
+      type:'bar',
+      label:`${f} (€)`,
+      data:vals.map((v,i)=>v||null),
+      backgroundColor:col+'44',
+      borderColor:col,
+      borderWidth:1.5,
+      borderRadius:4,
+      yAxisID:'yVal',
+      stack:f,
+    });
+    // Linea N° contestazioni
+    datasets.push({
+      type:'line',
+      label:`${f} (N°)`,
+      data:cont.map(v=>v||null),
+      borderColor:col,
+      backgroundColor:col+'20',
+      pointBackgroundColor:col,
+      pointBorderColor:'#fff',
+      pointBorderWidth:2,
+      pointRadius:5,
+      pointHoverRadius:7,
+      borderWidth:2.2,
+      tension:0.35,
+      yAxisID:'yNum',
+      fill:false,
+    });
+  });
+
+  // Se nessun dato: dataset placeholder
+  if(!lista.length){
+    datasets.push({type:'bar',label:'Nessun fornitore',data:Array(12).fill(0),backgroundColor:'#e5e7eb',yAxisID:'yVal'});
+  }
+
+  const maxVal=parseFloat((document.getElementById('ax-ch-segn-val')?.value||'10000').replace('.','').replace(',','.'))||10000;
+  const maxNum=parseFloat((document.getElementById('ax-ch-segn-num')?.value||'10').replace('.','').replace(',','.'))||10;
+
+  chartReg['ch-segnalazioni']=new Chart(ctx,{
+    data:{labels:MS,datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{
+          display:false,
+        },
+        tooltip:{
+          backgroundColor:'#fff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,
+          titleColor:'#0f172a',bodyColor:'#334155',padding:10,boxPadding:4,
+          titleFont:{family:'Montserrat',weight:'800',size:11},
+          bodyFont:{family:'Montserrat',size:11},
+          callbacks:{
+            label:(ctx)=>{
+              const v=ctx.parsed.y;if(v==null||v===0)return null;
+              return ctx.dataset.yAxisID==='yVal'
+                ?` ${ctx.dataset.label}: €\u00a0${fmtItEuro(v)}`
+                :` ${ctx.dataset.label}: ${v} segn.`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(0,0,0,0.04)'},
+          ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#94a3b8'}
+        },
+        yVal:{
+          type:'linear',position:'left',
+          min:0,max:maxVal,
+          grid:{color:'rgba(0,0,0,0.04)'},
+          ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#6366f1',
+            callback:v=>'€'+v.toLocaleString('it-IT',{maximumFractionDigits:0})}
+        },
+        yNum:{
+          type:'linear',position:'right',
+          min:0,max:maxNum,
+          grid:{drawOnChartArea:false},
+          ticks:{font:{family:'Montserrat',size:10,weight:'600'},color:'#374151',stepSize:1,
+            callback:v=>Number.isInteger(v)?v:null}
+        }
+      }
+    }
+  });
+
+  // Aggiorna legenda custom
+  const leg=document.getElementById('ch-segn-legend');
+  if(leg&&lista.length){
+    leg.innerHTML=lista.map((f,fi)=>{
+      const col=FORN_COLORS[fi%FORN_COLORS.length];
+      return`<div style="display:flex;align-items:center;gap:5px;font-family:'Montserrat';font-size:10px;font-weight:600;color:#475569">
+        <div style="width:12px;height:12px;border-radius:3px;background:${col}"></div>${f}
+      </div>`;
+    }).join('');
+  } else if(leg){
+    leg.innerHTML='<span style="font-size:10px;color:#94a3b8">Nessun fornitore registrato</span>';
+  }
+}
+
+function buildAllCharts(){buildSegnChart();
+  const map={'ch-c1':'ordiniNum','ch-c2':'ordiniVal','ch-a1':'ordiniNum','ch-a2':'ordiniVal'};
+  Object.entries(map).forEach(([id,k])=>{if(document.getElementById(id))mkChart(id,DB.acquisti.kpis[k]);});
+}
+
+// ═══ WARNINGS ═══
+function collectWarnings(){
+  const w=[];
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];const v26=ytd4(kpi.tot2026),tgt=ytd4(kpi.target);const s=st(kpi,v26,tgt);
+    if(s==='warn'||s==='amber'){w.push({type:s==='warn'?'crit':'att',title:`${kpi.icon} ${kpi.label}`,msg:`YTD 2026: ${fmtK(v26,kpi.unit)} — Target: ${fmtK(tgt,kpi.unit)}`,azione:kpi.azioni[s]});}
+    kpi.tot2026.slice(0,4).forEach((v,m)=>{const sm=st(kpi,v,kpi.target[m]);if(sm==='warn'&&s!=='warn')w.push({type:'att',title:`${kpi.icon} ${kpi.label} — ${MESI[m]}`,msg:`${MESI[m]}: ${fmtN(v,kpi.unit)} vs target ${fmtTgt(kpi.target[m],kpi.unit)}`,azione:kpi.azioni['amber']});});
+  });
+  const{lista,dati}=DB.acquisti.fornitori;
+  const ft=lista.reduce((a,f)=>a+dati[f].slice(0,4).reduce((b,v)=>b+(v||0),0),0);
+  if(ft>0){const sorted=[...lista].sort((a,b)=>dati[b].reduce((s,v)=>s+(v||0),0)-dati[a].reduce((s,v)=>s+(v||0),0));const top=sorted.filter(f=>dati[f].reduce((s,v)=>s+(v||0),0)>0).slice(0,3);
+    w.push({type:'crit',title:'🏭 Classifica Segnalazioni Fornitori',msg:`Fornitori critici: ${top.map((f,i)=>`${i+1}° ${f} (${dati[f].reduce((s,v)=>s+(v||0),0)})`).join(' · ')}`,azione:`Azioni prioritarie per ${top[0]||'—'}. Valutare l'inserimento di fornitori alternativi per ridurre la dipendenza.`});}
+  return w;
+}
+function refreshWarnings(){
+  const warns=collectWarnings();const list=document.getElementById('wp-list');if(!list)return;
+  if(!warns.length)list.innerHTML=`<div style="text-align:center;padding:50px 20px"><div style="font-size:44px;margin-bottom:12px">✅</div><div style="font-weight:800;font-size:15px;margin-bottom:6px">Tutti i KPI in linea!</div><div style="font-size:12px;color:var(--text3)">Nessuna azione correttiva necessaria.</div></div>`;
+  else list.innerHTML=warns.map(w=>`<div class="wc ${w.type}"><div class="wc-hd">${w.type==='crit'?'🔴':'🟠'} ${w.title}</div><div class="wc-msg">${w.msg}</div><div class="wc-action ${w.type}"><div class="wc-lbl">💡 Consiglio</div>${w.azione}</div></div>`).join('');
+}
+function refreshCounters(){
+  const n=collectWarnings().length;
+  ['sb-warn-n','warn-chip-n'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=n;});
+  const wc=document.getElementById('warn-chip');if(wc)wc.style.display=n>0?'flex':'none';
+  document.querySelectorAll('[data-auto-badge]').forEach(b=>b.remove());
+  if(n>0){const ni=document.querySelector('[data-v=acquisti]:not(.ni-sub)');if(ni&&!ni.querySelector('.ni-badge')){const b=document.createElement('span');b.className='ni-badge';b.setAttribute('data-auto-badge','1');b.textContent=n;ni.appendChild(b);}}
+}
+function refreshInlineAlerts(){
+  // Mappa kpiId → div#inline-alert-{id}
+  const MAP={
+    ordiniNum:'inline-alert-ordiniNum',
+    ordiniVal:'inline-alert-ordiniVal',
+    segnNum:'inline-alert-segnNum',
+    segnVal:'inline-alert-segnVal',
+  };
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];
+    const v26=ytd4(kpi.tot2026),tgt=ytd4(kpi.target);
+    const s=st(kpi,v26,tgt);
+    const el=document.getElementById(MAP[k]);
+    if(!el)return;
+    if(s==='ok'){
+      el.className='inline-alert ok';
+      el.style.display='block';
+      el.innerHTML=`<div class="inline-alert-hd">✓ KPI in linea</div>${kpi.azioni.ok}`;
+    } else if(s==='warn'||s==='amber'){
+      el.className=`inline-alert ${s==='warn'?'crit':'att'}`;
+      el.style.display='block';
+      const ico=s==='warn'?'🔴':'🟠';
+      el.innerHTML=`<div class="inline-alert-hd">${ico} ${s==='warn'?'Alert':'Attenzione'} — YTD 2026: ${fmtK(v26,kpi.unit)} vs Target: ${fmtK(tgt,kpi.unit)}</div>
+        <div class="inline-alert-azione"><strong>💡 Azione consigliata:</strong> ${kpi.azioni[s]}</div>`;
+    } else {
+      el.style.display='none';
+    }
+  });
+  // Fornitori
+  const el=document.getElementById('inline-alert-fornitori');
+  if(el){
+    const{lista,dati}=DB.acquisti.fornitori;
+    const ft=lista.reduce((a,f)=>a+dati[f].slice(0,4).reduce((b,v)=>b+(v||0),0),0);
+    if(ft===0){
+      el.className='inline-alert ok';el.style.display='block';
+      el.innerHTML=`<div class="inline-alert-hd">✓ Nessuna segnalazione fornitori</div>Il parco fornitori è attualmente conforme. Continuare il monitoraggio periodico.`;
+    } else {
+      const sorted=[...lista].sort((a,b)=>dati[b].reduce((s,v)=>s+(v||0),0)-dati[a].reduce((s,v)=>s+(v||0),0));
+      const top=sorted.filter(f=>dati[f].reduce((s,v)=>s+(v||0),0)>0).slice(0,3);
+      el.className='inline-alert crit';el.style.display='block';
+      el.innerHTML=`<div class="inline-alert-hd">🔴 Segnalazioni fornitori presenti — YTD: ${ft}</div>
+        Top fornitori: ${top.map((f,i)=>`<strong>${i+1}° ${f}</strong> (${dati[f].reduce((s,v)=>s+(v||0),0)} segn.)`).join(' · ')}
+        <div class="inline-alert-azione"><strong>💡 Azione consigliata:</strong> Avviare azioni correttive per ${top[0]||'—'}. Valutare fornitori alternativi.</div>`;
+    }
+  }
+}
+
+function openWP(){refreshWarnings();document.getElementById('wp')?.classList.add('open');document.getElementById('overlay')?.classList.add('open');}
+function closeWP(){document.getElementById('wp')?.classList.remove('open');document.getElementById('overlay')?.classList.remove('open');}
+function refreshAll(){refreshWarnings();refreshCounters();buildCruscottoCards();buildTopFlop();buildCruscottoAlerts();}
+
+function buildCruscottoAlerts(){
+  const wrap=document.getElementById('cruscotto-alerts');if(!wrap)return;
+  const warns=[];
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];
+    const v26=ytd4(kpi.tot2026),tgt=ytd4(kpi.target);
+    const s=st(kpi,v26,tgt);
+    if(s!=='neutral') warns.push({kpi,v26,tgt,s});
+  });
+  const{lista,dati}=DB.acquisti.fornitori;
+  const ft=lista.reduce((a,f)=>a+dati[f].slice(0,4).reduce((b,v)=>b+(v||0),0),0);
+  if(ft>0) warns.push({kpi:{icon:'🏭',label:'Segnalazioni Fornitori',unit:'',azioni:{warn:'Avviare azioni correttive prioritarie. Valutare fornitori alternativi.',amber:'Monitorare e avviare CAR preventivo.'}},v26:ft,tgt:0,s:'warn'});
+
+  if(!warns.length){wrap.innerHTML='';return;}
+
+  let html=`<div style="margin-bottom:20px">
+    <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">⚡ Alert per KPI — 🛒 Acquisti</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">`;
+  warns.forEach(({kpi,v26,tgt,s})=>{
+    const col=stColor(s);
+    const ico=s==='warn'?'🔴':s==='amber'?'🟠':'✓';
+    const bgMap={warn:'rgba(220,38,38,0.05)',amber:'rgba(217,119,6,0.05)',ok:'rgba(132,204,22,0.05)'};
+    const bdMap={warn:'rgba(220,38,38,0.22)',amber:'rgba(217,119,6,0.2)',ok:'rgba(132,204,22,0.25)'};
+    html+=`<div style="background:${bgMap[s]||bgMap.ok};border:1px solid ${bdMap[s]||bdMap.ok};border-radius:var(--r2);padding:12px 14px">
+      <div style="font-size:11px;font-weight:800;color:${col};margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        ${ico} ${kpi.icon} ${kpi.label}
+        <span style="font-size:10px;font-weight:600;color:var(--text3);margin-left:auto">YTD: ${fmtK(v26,kpi.unit||'')} / Target: ${fmtK(tgt,kpi.unit||'')}</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--text2);line-height:1.5">${kpi.azioni?.[s]||kpi.azioni?.warn||''}</div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  wrap.innerHTML=html;
+}
+
+// ═══ BUILD VISTE ═══
+function buildCruscotto(){buildCruscottoCards();buildTopFlop();buildCruscottoAlerts();setTimeout(()=>buildAllCharts(),50);refreshCounters();refreshWarnings();}
+function buildAcquisti(){
+  buildRiepilogoColumns();
+  buildSegnFornTable();
+  setTimeout(()=>{buildAllCharts();buildBudgetChart();buildForniChart();buildSegnTable();},50);
+  buildAllKpiTables();refreshFornSel();buildRubrica();refreshAll();refreshInlineAlerts();
+  // Notifica venerdì
+  const notif=document.getElementById('friday-notif');
+  if(notif){const dow=new Date().getDay();notif.style.display=dow===5?'block':'none';}
+}
+
+// ═══ INSERIMENTO GLOBALE ═══
+function buildInsForm(){
+  const mese=parseInt(document.getElementById('ins-mese')?.value||'0');
+  const body=document.getElementById('ins-form-body');if(!body)return;
+  let html=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:18px;">`;
+  KS.forEach(k=>{
+    const kpi=DB.acquisti.kpis[k];const isEuro=kpi.unit==='€';
+    html+=`<div class="panel" style="margin-bottom:0"><div class="panel-hd" style="padding:10px 14px"><span class="panel-title" style="font-size:11.5px">${kpi.icon} ${kpi.label}</span></div>
+      <div class="panel-body" style="padding:12px;display:flex;flex-direction:column;gap:8px">
+        ${[0,1,2,3,4].map(s=>{const v=kpi.settimane[s][mese];return`<div class="field"><label>Settimana ${s+1}</label><input type="number" step="any" id="insf-${k}-s${s}" value="${v!=null?v:''}" placeholder="${isEuro?'€ 0':'0'}"></div>`;}).join('')}
+        <div style="border-top:1px solid var(--border);padding-top:10px;font-size:10px;color:var(--text3)">🎯 Target KPI: <strong style="color:var(--text)">${fmtTgt(kpi.target[mese],kpi.unit)}</strong></div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;body.innerHTML=html;
+}
+function saveIns(){
+  const mese=parseInt(document.getElementById('ins-mese')?.value||'0');
+  KS.forEach(k=>{const kpi=DB.acquisti.kpis[k];for(let s=0;s<5;s++){const inp=document.getElementById(`insf-${k}-s${s}`);if(inp)kpi.settimane[s][mese]=inp.value===''?null:parseFloat(inp.value);}recalcTot(k);});
+  document.getElementById('lastSave').textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  refreshAll();buildInsForm();buildBudgetChart();
+  const prev=document.getElementById('ins-preview'),prevB=document.getElementById('ins-preview-body');
+  if(prev&&prevB){prev.style.display='block';let html=`<div style="font-size:12px;font-weight:700;margin-bottom:12px">✅ Dati salvati — ${MESI[mese]}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;">`;
+    KS.forEach(k=>{const kpi=DB.acquisti.kpis[k];const v=kpi.tot2026[mese],t=kpi.target[mese];const s=st(kpi,v,t);html+=`<div style="background:var(--surf3);border:1px solid var(--border);border-radius:8px;padding:12px"><div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:5px">${kpi.icon} ${kpi.label}</div><div style="font-size:20px;font-weight:800;color:${stColor(s)}">${fmtNZ(v,kpi.unit)}</div><div style="font-size:11px;color:${stColor(s)};font-weight:700;margin-top:4px">${stLabel(s)} — Target: ${fmtTgt(t,kpi.unit)}</div></div>`;});
+    html+=`</div>`;prevB.innerHTML=html;}
+}
+
+// ═══ INIT ═══
+// ═══ FILTRO PERIODO ═══
+let filtroCorrente='mese'; // 'settimana' | 'mese' | 'anno'
+
+function setFiltro(tipo,btn){
+  filtroCorrente=tipo;
+  document.querySelectorAll('.fil-btn').forEach(b=>b.classList.remove('fil-active'));
+  btn.classList.add('fil-active');
+  buildFiltroSel();
+  applyFiltro();
+}
+
+function buildFiltroSel(){
+  const sel=document.getElementById('fil-sel');if(!sel)return;
+  sel.innerHTML='';
+  if(filtroCorrente==='settimana'){
+    // Settimane 1-5 per ogni mese
+    MESI.forEach((m,mi)=>{
+      for(let s=1;s<=5;s++){
+        const o=document.createElement('option');
+        o.value=`${mi}-${s-1}`;o.textContent=`${m.substring(0,3)} - S${s}`;sel.appendChild(o);
+      }
+    });
+    sel.style.display='';
+  } else if(filtroCorrente==='mese'){
+    MESI.forEach((m,i)=>{const o=document.createElement('option');o.value=i;o.textContent=m;sel.appendChild(o);});
+    sel.value=Math.min(new Date().getMonth(),11);
+    sel.style.display='';
+  } else {
+    // Anno: solo 2026/2025
+    ['2026','2025'].forEach(y=>{const o=document.createElement('option');o.value=y;o.textContent=y;sel.appendChild(o);});
+    sel.style.display='';
+  }
+}
+
+function onFiltroSel(){
+  applyFiltro();
+}
+
+function applyFiltro(){
+  const sel=document.getElementById('fil-sel');if(!sel)return;
+  // Sincronizza con il selettore mese del riepilogo
+  if(filtroCorrente==='mese'){
+    const rm=document.getElementById('riepilogo-mese');
+    if(rm&&sel.value!==undefined){rm.value=sel.value;buildRiepilogoColumns();}
+  } else if(filtroCorrente==='settimana'){
+    const [mi,si]=sel.value.split('-').map(Number);
+    const rm=document.getElementById('riepilogo-mese');
+    if(rm){rm.value=mi;buildRiepilogoColumns();}
+  } else if(filtroCorrente==='anno'){
+    // Anno: mostra YTD aggregato — forza mese a null per visualizzazione totale
+    buildRiepilogoColumns();
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // Carica dati salvati nel browser
+  if(loadFromStorage()){
+    // Ricalcola totali KPI dai dati ripristinati
+    Object.values(DB.acquisti.kpis).forEach(kpi=>{
+      kpi.tot2026.forEach((v,m)=>{
+        if(v==null||v===0){
+          let s=0;kpi.settimane.forEach(r=>{if(r[m]!=null)s+=r[m];});
+          if(s>0)kpi.tot2026[m]=s;
+        }
+      });
+    });
+  }
+  const today=new Date();
+  const chip=document.getElementById('today-chip');
+  if(chip)chip.textContent=today.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+  const im=document.getElementById('ins-mese');if(im)im.value=Math.min(today.getMonth(),11);
+  const rm=document.getElementById('riepilogo-mese');if(rm)rm.value=Math.min(today.getMonth(),11);
+  const fm=document.getElementById('forn-mese-ins');if(fm)fm.value=Math.min(today.getMonth(),11);
+  buildFiltroSel();
+  refreshCounters();refreshFornSel();
+  buildAcquisti();
+  const notif=document.getElementById('friday-notif');
+  if(notif&&new Date().getDay()===5)notif.style.display='block';
+});
+</script>
+
+<!-- ═══ KPI Hub - Bridge (sincronizza i dati con l'hub) ═══ -->
+<script src="../assets/js/kpi-bridge.js"></script>
+<script>
+  KpiBridge.init({
+    slug: 'acquisti',
+    storageKey: 'kpi_acquisti_dati_v3',
+    extractor: 'acquisti'
+  });
+</script>
+<!-- ═══ Fine Bridge ═══ -->
+
+</body>
+</html>

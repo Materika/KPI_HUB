@@ -1,0 +1,225 @@
+{
+  "reparto": "amministrazione",
+  "nome": "Amministrazione",
+  "ultimoAggiornamento": "2026-05-15",
+  "kpiMensili": [
+    {
+      "id": "piano",
+      "label": "Piano Finanziario",
+      "icon": "🏦",
+      "unit": "%",
+      "isLowerBetter": false,
+      "valori": [
+        91.05,
+        93.33,
+        92.03,
+        93.77,
+        93.94,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        85.91,
+        85.53,
+        91.4,
+        87.29,
+        87.11,
+        92.53,
+        88.79,
+        91.4,
+        88.83,
+        89.99,
+        86.51,
+        89.96
+      ],
+      "target": [
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95,
+        95
+      ],
+      "azioni": {
+        "ok": "✓ Piano finanziario rispettato.",
+        "amber": "△ Lieve scostamento. Riallineare flussi.",
+        "warn": "⚠ Piano fuori controllo. Revisione urgente."
+      }
+    },
+    {
+      "id": "scaduti",
+      "label": "% Crediti Scaduti",
+      "icon": "⏱",
+      "unit": "%",
+      "isLowerBetter": true,
+      "valori": [
+        14.91,
+        13.12,
+        14.25,
+        13.89,
+        10.73,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        18.76,
+        17.62,
+        15.65,
+        13.81,
+        19.49,
+        16.81,
+        18.49,
+        19.58,
+        18.46,
+        19.86,
+        16.29,
+        19.05
+      ],
+      "target": [
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15
+      ],
+      "azioni": {
+        "ok": "✓ Crediti scaduti sotto soglia.",
+        "amber": "△ Crediti scaduti in aumento. Avviare solleciti.",
+        "warn": "⚠ Crediti scaduti critici. Azioni di recupero urgenti."
+      }
+    },
+    {
+      "id": "recuperati",
+      "label": "Crediti Recuperati",
+      "icon": "💰",
+      "unit": "€",
+      "isLowerBetter": false,
+      "valori": [
+        72507,
+        94601,
+        92048,
+        56885,
+        58618,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        49811,
+        76757,
+        57701,
+        64559,
+        52836,
+        60260,
+        55891,
+        54632,
+        63062,
+        63033,
+        74551,
+        66551
+      ],
+      "target": [
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000,
+        70000
+      ],
+      "azioni": {
+        "ok": "✓ Obiettivi di recupero raggiunti.",
+        "amber": "△ Recupero in calo. Intensificare attività.",
+        "warn": "⚠ Recupero insufficiente. Coinvolgere legale."
+      }
+    },
+    {
+      "id": "variazione",
+      "label": "Variazione Crediti",
+      "icon": "📊",
+      "unit": "€",
+      "isLowerBetter": true,
+      "valori": [
+        8431,
+        7851,
+        8927,
+        6370,
+        2304,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "valoriAnnoPrec": [
+        12616,
+        13947,
+        13180,
+        8884,
+        10736,
+        4302,
+        12244,
+        8941,
+        5247,
+        2412,
+        12530,
+        14269
+      ],
+      "target": [
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000,
+        10000
+      ],
+      "azioni": {
+        "ok": "✓ Variazione contenuta.",
+        "amber": "△ Variazione in crescita.",
+        "warn": "⚠ Variazione fuori controllo."
+      }
+    }
+  ],
+  "alerts": [],
+  "_nota": "Dati di esempio. Sovrascritti automaticamente dal bridge quando apri il file del reparto. Per esportare i dati reali, apri il reparto e clicca \"📤 Esporta JSON\"."
+}
